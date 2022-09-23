@@ -19,7 +19,7 @@ Models
 *.blg
 *.log
 *.out
-*.syntec.gz
+*.synctex.gz
 
 # C extensions
 *.so
