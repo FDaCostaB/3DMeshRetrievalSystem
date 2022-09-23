@@ -19,6 +19,8 @@ Models
 *.log
 *.out
 *.synctex.gz
+*.bcf
+*.run.xml
 
 # C extensions
 *.so
