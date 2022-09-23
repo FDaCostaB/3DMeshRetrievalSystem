@@ -15,7 +15,6 @@ Models
 
 #Latex generated files
 *.aux
-*.bbl
 *.blg
 *.log
 *.out
