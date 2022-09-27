@@ -51,8 +51,8 @@ In this case, we narrowed down the packages that work with Python language and w
 We wanted to be able to open "PLY", "OFF", "OBJ", and "STL" formats. "PLY" and "OFF" formats were discussed in the lecture, while "OBJ" and "STL" are really common. All of them were able to open "PLY", "OFF", "OBJ", and "STL" formats, so that was not really discriminating. \\ \\
 	We tried to compare the different re-meshing, repairing and extraction features with our current knowledge and thought that PyMeshLab and Open3D seems to be quite good. The complexity was also one of our requirements as from previous experience less complex library offers less options. \\ \\
 	After achieving step 1 with four of those libraries, we try to find a balance between number of dependencies, options proposed for visualizing and analysis. Then we decide to choose "PyMeshLab"\cite{pymeshlab}
-Our project has three main dependencies. "PyMeshLab", "Polyscope", and "Numpy", and it runs with Python 3.9. \\ \\ \\ \\ \\
-\begin{table*}[t]
+Our project has three main dependencies. "PyMeshLab", "Polyscope", and "Numpy", and it runs with Python 3.9. \\ 
+\begin{table*}[ht]
     	\hspace*{-0.1\linewidth}\begin{tabular}{|p{0.25\linewidth}|p{0.2\linewidth}|>{\centering}p{0.15\linewidth}|>{\centering}p{0.15\linewidth}|>{\centering}p{0.15\linewidth}|>{\centering\arraybackslash}p{0.15\linewidth}|}
     		\hline
      		Features category & Desired Fetures & PyMesh & PyMeshLab & TriMesh & Open3D \\ \hline
@@ -87,7 +87,7 @@ In "render.py", there is a function called "render". This function loads the mes
 
 	
 	
-\begin{figure}
+\begin{figure}[h!]
 \begin{center}
   \includegraphics[width=0.5\textwidth]{ant}
   \caption{Visualisation of an ant mesh}
