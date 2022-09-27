@@ -29,11 +29,11 @@
     Utrecht University}
     
 \author{
-  Fabien Da Costa Barros [0720823]\\
+  Da Costa Barros, Fabien [0720823]\\
   \url{f.n.dacostabarros@uu.students.nl}
   \and
-  LastName2, FirstName2\\
-  \url{first2.last2@xxxxx.com}
+  Bagheri, Soheil [6208908]\\
+  \url{s.bagheri@students.uu.nl}
 }
 \date{\today}
 \addbibresource{refs.bib}                                                                     
@@ -41,17 +41,18 @@
 \maketitle
 \selectlanguage{english}
 \section*{Introduction}
-The objective of this project is to choose, parametrise and put in practise different procedure and algorithms to build an end-to-end MR System. More precisely the focus will be put on 3D mesh retrieval system. From one mesh we have to retrieve all (at least a decent proportion) of similar mesh. The main challenges will be to analyse different features of a 3D mesh. The main steps of the assignments will be to read and display a 3D mesh; then we have to fix and normalise all the 3D meshes in a database. After that we will extract the feature of the meshes to get the essence of what can define the object is in real life, then compare with other mesh and retrieve similar mesh. At the end we have to improve it so that it can work faster. All of the code can be find on this \href{https://github.com/FDaCostaB/3DMeshRetrievalSystem}{GitHub page}  
+With the advance in modeling software and 3D scanners, the speed of 3D content creation increased rapidly. Nowadays, much 3D content has been produced, and people are still creating many more objects constantly. These kinds of contents are usually stored in so-called shape databases. But, there is a challenge to browse and find the 3D objects of interest within these numerous amounts of data.\\ \\
+Several techniques have already been presented for finding desired data in these shape databases. For example, searching by keyword, browsing the database along a few predefined categories, or content-based shape retrieval (CBSR). Although the first two options do not need a sample model for searching in a database, they need more effort to label or categorize these contents. On the other hand, there is content-based shape retrieval which can retrieve all the similar samples to the existing query shape.\\ \\
+In this project, we want to categorize the 3D objects of a database based on their shape similarity. This process will be done by normalizing all the objects and extracting some general features from them. Then, we can divide similar objects based on their similarity in their features. Also, there would be a content-based shape retrieval that can find similar 3D objects based on the feature extracted from the given query shape and compared to other objects in the database.
 
 \section{Selection and setup the work environment}
-
-We really want to work with Python as both of us as already a good experience and is efficient using it. It is in general easy to set up a new project and install python library and this was one of the main reason of choosing Python for our project. The research of 3D Mesh analysis and visualisation tool as been narrowed to Python libraries. \\ \\
-We have discussed the use of PyMesh, PyMeshLab, TriMesh, Open3D, Vedo. To get a nice taste of what each of them can offer we dig in the documentation to compare the differents features. We also complete the step 1 with each of those library to be able to choose after setting up and working (a little) bit with them. \\ \\
-	We try to compare the different re-meshing, repairing and extraction features with our current knowledge and thought that PyMeshLab and Open3D seems to be good candidates. Vedo was excluded from the choice at this point as we didn't find enough informations in the documentation even if it looks fancy. Taking into account the short description made on the assignment page of the course's website consolidated our choices as a powerful and reliable library is needed for this project. \\ \\
 In this section, four different related packages have been tested and compared. The Comparison of these packages has been done based on several features that might be useful in the future sections of this project. For example, being able to re-mesh objects, scaling them, rotating them, and moving them are the feature that can be useful in the process of normalizing the 3d objects in the database. Also, having some information about the 3d objects, like the number of vertices and faces, is necessary for understanding if these 3d objects are normalized or not. On the other hand, this package must support different formats that are usually used to store 3d objects.
-In this case, we narrowed down the packages that work with Python language and well-known between the community. So, we tested and analyzed "Pymesh", "PyMeshLab", "TriMesh", and "Open3D". (See Table \ref{tab:libraries} )\\ \\
-
-	\begin{table*}[t]
+In this case, we narrowed down the packages that work with Python language and well-known between the community. So, we tested and analyzed "Pymesh", "PyMeshLab", "TriMesh", and "Open3D". Results can be found in the table 1.\\ \\
+We wanted to be able to open "PLY", "OFF", "OBJ", and "STL" formats. "PLY" and "OFF" formats were discussed in the lecture, while "OBJ" and "STL" are really common. All of them were able to open "PLY", "OFF", "OBJ", and "STL" formats, so that was not really discriminating. \\ \\
+	We tried to compare the different re-meshing, repairing and extraction features with our current knowledge and thought that PyMeshLab and Open3D seems to be quite good. The complexity was also one of our requirements as from previous experience less complex library offers less options. \\ \\
+	After achieving step 1 with four of those libraries, we try to find a balance between number of dependencies, options proposed for visualizing and analysis. Then we decide to choose "PyMeshLab"\cite{pymeshlab}
+Our project has three main dependencies. "PyMeshLab", "Polyscope", and "Numpy", and it runs with Python 3.9. \\ \\ \\ \\ \\
+\begin{table*}[t]
     	\hspace*{-0.1\linewidth}\begin{tabular}{|p{0.25\linewidth}|p{0.2\linewidth}|>{\centering}p{0.15\linewidth}|>{\centering}p{0.15\linewidth}|>{\centering}p{0.15\linewidth}|>{\centering\arraybackslash}p{0.15\linewidth}|}
     		\hline
      		Features category & Desired Fetures & PyMesh & PyMeshLab & TriMesh & Open3D \\ \hline
@@ -77,17 +78,15 @@ In this case, we narrowed down the packages that work with Python language and w
     	\end{tabular}
     	 \caption{In-built features for different Python libraries}
   		\label{tab:libraries}
-	\end{table*}
+	\end{table*} \\ \\
+
+
+\section{Rendering}
+We have two scripts for this step called "main.py" and "render.py" Where "main.py" verifies the console arguments and calls the render function from "render.py". The first argument passed through is the path of the file. \\ \\
+In "render.py", there is a function called "render". This function loads the mesh and displays the vertices and the mesh of the 3D object. PyMeshLab has a built-in function ".show\_polyscope" that shows a mesh. While we found it more interesting to override it with polyscope functions to have more control if we need to upgrade anything. The result of the mesh visualization script can be found in Figure \ref{fig:ant-mesh}. The 3D mesh visualization windows offered many functionalities.
+
 	
-	We wanted to be able to open "PLY", "OFF", "OBJ", and "STL" formats. "PLY" and "OFF" formats were discussed in the lecture, while "OBJ" and "STL" are really common. All of them were able to open "PLY", "OFF", "OBJ", and "STL" formats, so that was not really discriminating. \\ \\
-	We tried to compare the different re-meshing, repairing and extraction features with our current knowledge and thought that PyMeshLab and Open3D seems to be quite good. The complexity was also one of our requirements as from previous experience less complex library offers less options. \\ \\
-	After achieving step 1 with four of those libraries (vedo excluded), we try to find a balance between number of dependencies, options proposed for visualizing and analysis. Then we decide to choose "PyMeshLab"\cite{pymeshlab} \\ \\
-
-\section{Step 1}
-
-	For this step, we have done several tries with PyMesh, PyMeshLab, TriMesh and Open3D to get a taste of the different libraries. We get some trouble to set up PyMesh as we have no previous knowledge in Docker. For the other libraries it was really easy to set up and we mainly take advantage of the code snippet of the 'Getting started' page of the corresponding library.  Later on  we will only discuss the PymeshLab project. \\ \\
-	Our project have three main dependencies : PyMeshLab, Polyscope and Numpy and run with Python 3.9. At the moment, we have two scripts : main.py and render.py. To have a nice overview and organisation of  the project we will try to split as much as possible the different functionality of the project. 'main.py' just verify the number of arguments and call the function render from 'render.py' with the first arguments passed through. This arguments is the name of the file. We prefer to pass it through the command line so that's it make easy to check tens of mesh and quickly inspect if all is working well. \\ \\
-	In 'render.py' there is only one function render() : this function load the mesh, and display the cloud point corresponding to the vertex and the mesh. PyMeshLab have a built-in function '.show\_polyscope' that show a mesh. We find it more interesting to work directly with polyscope to have more control if need to update this later. The result of the mesh visualisation script can be seen at Figure \ref{fig:ant-mesh}. The result of the first step is interesting and satisfy our expectations. The 3D mesh visualisation windows offered a lot of functionality. The look and features offered by PyMeshLab was the most complete library among all of the other libraries tested. 
+	
 \begin{figure}
 \begin{center}
   \includegraphics[width=0.5\textwidth]{ant}
