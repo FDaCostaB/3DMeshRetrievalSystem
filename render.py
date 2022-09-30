@@ -8,6 +8,7 @@ def render(s):
 
     ms.load_new_mesh(s)
 
+
     #pymesh function to dispaly mesh in a polyscope windows
     #ms.show_polyscope()
 
