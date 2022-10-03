@@ -107,7 +107,6 @@ def dataVisualisation(list, feature, n_bins = 20,size_x=10, size_y=7):
 
     axs.hist(list, bins=n_bins)
 
-    plt.show()
     plt.savefig("./output/"+feature.lower()+'.png')
 
 
