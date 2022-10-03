@@ -30,7 +30,7 @@ def dataFilter(path):
 
 def dataMeshFilter(mesh):
     diagSize = math.sqrt(mesh.bounding_box().dim_x()+mesh.bounding_box().dim_y()+mesh.bounding_box().dim_z())
-    res = {"Face numbers" : mesh.face_number(), "Vertex numbers" : mesh.vertex_number(), "Bounding Box Diagonal Size" : diagSize}
+    res = {"Face numbers" : mesh.face_number(), "Vertex numbers" : mesh.vertex_number(), "Bounding Box Diagonal Size" : diagSize, "PymeshLab Diag": mesh.bounding_box().diagonal(),"Size": [mesh.bounding_box().dim_x(),mesh.bounding_box().dim_y(),mesh.bounding_box().dim_z()]}
     return res
 
 def exportMeshesData():
@@ -72,7 +72,7 @@ def normaliseVertex(goal,eps):
             data = dataFilter(os.path.realpath(file))
             if data is not None:
                 totalMesh += 1
-                MeshManip.refactor(os.path.realpath(file), './output', ms, goal, eps)
+                MeshManip.resample(os.path.realpath(file), './output', ms, goal, eps)
         FileIt.close()
     for dir in os.scandir(pricetonPath):
         FileIt =os.scandir(os.path.join(pricetonPath, dir.name))
@@ -80,7 +80,7 @@ def normaliseVertex(goal,eps):
             data = dataFilter(os.path.realpath(file))
             if data is not None:
                 totalMesh += 1
-                MeshManip.refactor(os.path.realpath(file), './output', ms, goal, eps)
+                MeshManip.resample(os.path.realpath(file), './output', ms, goal, eps)
         FileIt.close()
     print(totalMesh)
 

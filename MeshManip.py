@@ -3,7 +3,7 @@ import pymeshlab
 import polyscope as ps
 import data
 
-def refactor(meshPath, outputDir, ms, goal=10000, eps=1000):
+def resample(meshPath, outputDir, ms, goal=10000, eps=1000):
     ms.load_new_mesh(meshPath)
 
     stats = data.dataMeshFilter(ms.current_mesh())
@@ -12,24 +12,25 @@ def refactor(meshPath, outputDir, ms, goal=10000, eps=1000):
     ms.apply_filter('meshing_remove_duplicate_faces')
     ms.apply_filter('meshing_remove_duplicate_vertices')
     ms.apply_filter('meshing_remove_unreferenced_vertices')
+    ms.apply_filter('meshing_re_orient_faces_coherentely')
     # ms.apply_filter('generate_splitting_by_connected_components', delete_source_mesh=True)
+    # ms.apply_filter('generate_resampled_uniform_mesh', cellsize=pymeshlab.Percentage(1))
     try :
-        # ms.apply_filter('generate_resampled_uniform_mesh', cellsize=pymeshlab.Percentage(1))
         ms.apply_filter('compute_iso_parametrization')
         ms.apply_filter('generate_iso_parametrization_remeshing', samplingrate=7)
     except :
-        refine(meshPath, outputDir, ms)
+        refine(meshPath, ms)
     stats = data.dataMeshFilter(ms.current_mesh())
     print(stats)
 
     ms.set_current_mesh(0)
     ms.save_current_mesh(os.path.join(outputDir,os.path.splitext(os.path.relpath(meshPath,'./Models'))[0]+".off"))
 
-    ms.show_polyscope()
+    # ms.show_polyscope()
     ms.clear()
 
 
-def refine(meshPath, outputDir,ms, goal=10000, eps=1000):
+def refine(meshPath,ms, goal=10000, eps=1000):
     LIMIT = 5
     ms.load_new_mesh(meshPath)
 
@@ -50,6 +51,7 @@ def refine(meshPath, outputDir,ms, goal=10000, eps=1000):
         print("LIMIT reached")
         print(stats)
         print(meshPath)
+        compare(meshPath,ms)
 
 def compare(originalMeshPath,ms):
     ms.load_new_mesh(originalMeshPath)
@@ -60,3 +62,31 @@ def compare(originalMeshPath,ms):
     ps.register_surface_mesh("After Mesh", ms.mesh(0).vertex_matrix(), ms.mesh(0).face_matrix())
     ps.show()
     ms.clear()
+
+
+def normalise(meshPath,ms):
+    ms.load_new_mesh(meshPath)
+
+    out_dict = ms.get_geometric_measures()
+    stats = data.dataMeshFilter(ms.current_mesh())
+    print(stats)
+    print('PCA')
+    print(out_dict['pca'])
+    print('Shell Barycenter')
+    print(out_dict['shell_barycenter'])
+
+    ms.compute_matrix_by_principal_axis()
+    ms.apply_matrix_flip_or_swap_axis()
+    out_dict = ms.get_geometric_measures()
+    ms.compute_matrix_from_translation(traslmethod='XYZ translation', axisx=-1*out_dict['shell_barycenter'][0], axisy=-1*out_dict['shell_barycenter'][1], axisz=-1*out_dict['shell_barycenter'][2])
+    ms.compute_matrix_from_scaling_or_normalization(customcenter=out_dict['shell_barycenter'], unitflag=True)
+
+    out_dict = ms.get_geometric_measures()
+    stats = data.dataMeshFilter(ms.current_mesh())
+    print(stats)
+    print('PCA')
+    print(out_dict['pca'])
+    print('Shell Barycenter')
+    print(out_dict['shell_barycenter'])
+
+    compare(meshPath,ms)
