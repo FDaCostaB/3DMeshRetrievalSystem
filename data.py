@@ -72,7 +72,7 @@ def normaliseVertex(goal,eps):
             data = dataFilter(os.path.realpath(file))
             if data is not None:
                 totalMesh += 1
-                MeshManip.resample(os.path.realpath(file),'./output',ms,goal,eps)
+                MeshManip.refactor(os.path.realpath(file), './output', ms, goal, eps)
         FileIt.close()
     for dir in os.scandir(pricetonPath):
         FileIt =os.scandir(os.path.join(pricetonPath, dir.name))
@@ -80,7 +80,7 @@ def normaliseVertex(goal,eps):
             data = dataFilter(os.path.realpath(file))
             if data is not None:
                 totalMesh += 1
-                MeshManip.resample(os.path.realpath(file),'./output',ms,goal,eps)
+                MeshManip.refactor(os.path.realpath(file), './output', ms, goal, eps)
         FileIt.close()
     print(totalMesh)
 

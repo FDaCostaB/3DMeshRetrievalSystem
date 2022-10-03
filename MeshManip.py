@@ -3,16 +3,27 @@ import pymeshlab
 import polyscope as ps
 import data
 
-def resample(meshPath, outputDir,ms, goal=10000, eps=1000):
+def refactor(meshPath, outputDir, ms, goal=10000, eps=1000):
     ms.load_new_mesh(meshPath)
 
     stats = data.dataMeshFilter(ms.current_mesh())
 
+    print(stats)
     ms.apply_filter('meshing_remove_duplicate_faces')
     ms.apply_filter('meshing_remove_duplicate_vertices')
     ms.apply_filter('meshing_remove_unreferenced_vertices')
-    ms.apply_filter('generate_sampling_stratified_triangle', samplenum=5000)
-    ms.apply_filter('generate_surface_reconstruction_screened_poisson')
+    # ms.apply_filter('generate_splitting_by_connected_components', delete_source_mesh=True)
+    try :
+        # ms.apply_filter('generate_resampled_uniform_mesh', cellsize=pymeshlab.Percentage(1))
+        ms.apply_filter('compute_iso_parametrization')
+        ms.apply_filter('generate_iso_parametrization_remeshing', samplingrate=7)
+    except :
+        refine(meshPath, outputDir, ms)
+    stats = data.dataMeshFilter(ms.current_mesh())
+    print(stats)
+
+    ms.set_current_mesh(0)
+    ms.save_current_mesh(os.path.join(outputDir,os.path.splitext(os.path.relpath(meshPath,'./Models'))[0]+".off"))
 
     ms.show_polyscope()
     ms.clear()
@@ -39,10 +50,9 @@ def refine(meshPath, outputDir,ms, goal=10000, eps=1000):
         print("LIMIT reached")
         print(stats)
         print(meshPath)
-    ms.set_current_mesh(0)
-    ms.save_current_mesh(os.path.join(outputDir,os.path.splitext(os.path.relpath(meshPath,'./Models'))[0]+".off"))
 
-    ms.load_new_mesh(meshPath)
+def compare(originalMeshPath,ms):
+    ms.load_new_mesh(originalMeshPath)
     ps.init()
     ps.register_point_cloud("Before cloud points", ms.mesh(1).vertex_matrix())
     ps.register_surface_mesh("Before Mesh", ms.mesh(1).vertex_matrix(), ms.mesh(1).face_matrix())
