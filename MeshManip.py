@@ -68,7 +68,7 @@ def compare(originalMeshPath,ms):
 
 def flipMomentTest(ms):
     moment=data.momentOrder(ms.current_mesh())
-    ms.apply_matrix_flip_or_swap_axis(flipx=moment[0]<0,flipy=moment[1]<0,flipz=moment[2]<0)
+    ms.apply_matrix_flip_or_swap_axis(flipx=moment[0]<0,flipy=moment[1]<0,flipz=moment[2]<0,swapxz=True)
 
 
 def normalise(meshPath, ms, showDebug =False):
