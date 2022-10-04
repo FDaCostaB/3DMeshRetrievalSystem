@@ -7,8 +7,7 @@ import pymeshlab
 
 if (len(sys.argv) == 2):
     ms = pymeshlab.MeshSet()
-    ms.load_new_mesh(sys.argv[1])
-    MeshManip.normalise(sys.argv[1], ms)
+    MeshManip.normalise(sys.argv[1], ms, True)
     # MeshManip.resample(sys.argv[1], './output', ms, 10000, 1000)
 else :
     data.normaliseVertex(10000,1000)

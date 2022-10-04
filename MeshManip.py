@@ -71,7 +71,7 @@ def flipMomentTest(ms):
     ms.apply_matrix_flip_or_swap_axis(flipx=moment[0]<0,flipy=moment[1]<0,flipz=moment[2]<0)
 
 
-def normalise(meshPath, ms, showDebug=False):
+def normalise(meshPath, ms, showDebug =False):
     ms.load_new_mesh(meshPath)
 
     out_dict = ms.get_geometric_measures()
@@ -97,4 +97,5 @@ def normalise(meshPath, ms, showDebug=False):
     print('Shell Barycenter')
     print(out_dict['shell_barycenter'])
 
-    if showDebug : compare(meshPath,ms)
+    if showDebug :
+        compare(meshPath,ms)
