@@ -2,6 +2,7 @@ import os.path
 import pymeshlab
 import polyscope as ps
 import data
+import numpy as np
 
 def resample(meshPath, outputDir, ms, goal=10000, eps=1000):
     ms.load_new_mesh(meshPath)
@@ -23,10 +24,11 @@ def resample(meshPath, outputDir, ms, goal=10000, eps=1000):
     stats = data.dataMeshFilter(ms.current_mesh())
     print(stats)
 
+    # normalise(meshPath,ms)
+
     ms.set_current_mesh(0)
     ms.save_current_mesh(os.path.join(outputDir,os.path.splitext(os.path.relpath(meshPath,'./Models'))[0]+".off"))
 
-    # ms.show_polyscope()
     ms.clear()
 
 
@@ -56,15 +58,20 @@ def refine(meshPath,ms, goal=10000, eps=1000):
 def compare(originalMeshPath,ms):
     ms.load_new_mesh(originalMeshPath)
     ps.init()
-    ps.register_point_cloud("Before cloud points", ms.mesh(1).vertex_matrix())
-    ps.register_surface_mesh("Before Mesh", ms.mesh(1).vertex_matrix(), ms.mesh(1).face_matrix())
-    ps.register_point_cloud("After cloud points", ms.mesh(0).vertex_matrix())
-    ps.register_surface_mesh("After Mesh", ms.mesh(0).vertex_matrix(), ms.mesh(0).face_matrix())
+    ps.register_point_cloud("After cloud points", ms.mesh(1).vertex_matrix())
+    ps.register_surface_mesh("After Mesh", ms.mesh(1).vertex_matrix(), ms.mesh(1).face_matrix())
+    ps.register_point_cloud("Before cloud points", ms.mesh(0).vertex_matrix())
+    ps.register_surface_mesh("Before Mesh", ms.mesh(0).vertex_matrix(), ms.mesh(0).face_matrix())
     ps.show()
     ms.clear()
 
 
-def normalise(meshPath,ms):
+def flipMomentTest(ms):
+    moment=data.momentOrder(ms.current_mesh())
+    ms.apply_matrix_flip_or_swap_axis(flipx=moment[0]<0,flipy=moment[1]<0,flipz=moment[2]<0)
+
+
+def normalise(meshPath, ms, showDebug=False):
     ms.load_new_mesh(meshPath)
 
     out_dict = ms.get_geometric_measures()
@@ -80,6 +87,7 @@ def normalise(meshPath,ms):
     out_dict = ms.get_geometric_measures()
     ms.compute_matrix_from_translation(traslmethod='XYZ translation', axisx=-1*out_dict['shell_barycenter'][0], axisy=-1*out_dict['shell_barycenter'][1], axisz=-1*out_dict['shell_barycenter'][2])
     ms.compute_matrix_from_scaling_or_normalization(customcenter=out_dict['shell_barycenter'], unitflag=True)
+    flipMomentTest(ms)
 
     out_dict = ms.get_geometric_measures()
     stats = data.dataMeshFilter(ms.current_mesh())
@@ -89,4 +97,4 @@ def normalise(meshPath,ms):
     print('Shell Barycenter')
     print(out_dict['shell_barycenter'])
 
-    compare(meshPath,ms)
+    if showDebug : compare(meshPath,ms)

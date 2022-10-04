@@ -3,6 +3,7 @@ import os
 import matplotlib.pyplot as plt
 import math
 import pymeshlab
+import numpy as np
 from pathlib import Path
 
 import MeshManip
@@ -24,13 +25,40 @@ def dataFilter(path):
                 sizeFace[str(len(face))] = 1
             if len(face)==4 : raise Exception("Quads found")
         diagSize = math.sqrt(cur.bounding_box().dim_x()+cur.bounding_box().dim_y()+cur.bounding_box().dim_z())
-        res = {"Category" : category, "Face numbers" : cur.face_number(), "Vertex numbers" : cur.vertex_number(), "Bounding Box Diagonal Size" : diagSize, "Types of faces" : sizeFace}
+        res = {"Category" : category, "Face numbers" : cur.face_number(), "Vertex numbers" : cur.vertex_number(), "Bounding Box Diagonal Size" : diagSize, "Moment order" : momentOrder(cur), "Types of faces" : sizeFace}
         ms.clear()
         return res
 
+def length(a,b):
+    x = 0
+    y = 1
+    z = 2
+    return ((b[x] - a[x])**2 + (b[y] - a[y])**2 + (b[z] - a[z])**2)**0.5
+def momentOrder(mesh):
+    faces = mesh.face_matrix()
+    vertex = mesh.vertex_matrix()
+    acc=[0,0,0]
+    for tri in faces:
+        x = 0
+        y = 1
+        z = 2
+        a = vertex[tri[0]]
+        b = vertex[tri[1]]
+        c = vertex[tri[2]]
+        ab = length(a,b)
+        bc = length(b,c)
+        ac = length(a,c)
+        s = (ab+bc+ac) / 2
+        area = (s*(s-ab)*(s-bc)*(s-ac))**0.5
+        center = [(a[x]+b[x]+c[x])/3, (a[y]+b[y]+c[y])/3, (a[z]+b[z]+c[z])/3]
+        acc[x] += area * np.sign(center[x])*(center[x])**2
+        acc[y] += area * np.sign(center[y])*(center[y])**2
+        acc[z] += area * np.sign(center[z])*(center[z])**2
+    return acc
+
 def dataMeshFilter(mesh):
     diagSize = math.sqrt(mesh.bounding_box().dim_x()+mesh.bounding_box().dim_y()+mesh.bounding_box().dim_z())
-    res = {"Face numbers" : mesh.face_number(), "Vertex numbers" : mesh.vertex_number(), "Bounding Box Diagonal Size" : diagSize, "PymeshLab Diag": mesh.bounding_box().diagonal(),"Size": [mesh.bounding_box().dim_x(),mesh.bounding_box().dim_y(),mesh.bounding_box().dim_z()]}
+    res = {"Face numbers" : mesh.face_number(), "Vertex numbers" : mesh.vertex_number(), "Bounding Box Diagonal Size" : diagSize, "Moment order" : momentOrder(mesh),"PymeshLab Diag": mesh.bounding_box().diagonal(),"Size": [mesh.bounding_box().dim_x(),mesh.bounding_box().dim_y(),mesh.bounding_box().dim_z()]}
     return res
 
 def exportMeshesData():
