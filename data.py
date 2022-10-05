@@ -34,26 +34,28 @@ def length(a,b):
     y = 1
     z = 2
     return ((b[x] - a[x])**2 + (b[y] - a[y])**2 + (b[z] - a[z])**2)**0.5
+
+def triArea(a,b,c):
+    ab = length(a,b)
+    bc = length(b,c)
+    ac = length(a,c)
+    s = (ab+bc+ac) / 2
+    area = (s*(s-ab)*(s-bc)*(s-ac))**0.5
+    return area
+
 def momentOrder(mesh):
     faces = mesh.face_matrix()
     vertex = mesh.vertex_matrix()
     acc=[0,0,0]
+    x = 0; y = 1; z = 2
     for tri in faces:
-        x = 0
-        y = 1
-        z = 2
         a = vertex[tri[0]]
         b = vertex[tri[1]]
         c = vertex[tri[2]]
-        ab = length(a,b)
-        bc = length(b,c)
-        ac = length(a,c)
-        s = (ab+bc+ac) / 2
-        area = (s*(s-ab)*(s-bc)*(s-ac))**0.5
         center = [(a[x]+b[x]+c[x])/3, (a[y]+b[y]+c[y])/3, (a[z]+b[z]+c[z])/3]
-        acc[x] += area * np.sign(center[x])*(center[x])**2
-        acc[y] += area * np.sign(center[y])*(center[y])**2
-        acc[z] += area * np.sign(center[z])*(center[z])**2
+        acc[x] += np.sign(center[x])*(center[x])**2
+        acc[y] += np.sign(center[y])*(center[y])**2
+        acc[z] += np.sign(center[z])*(center[z])**2
     return acc
 
 def dataMeshFilter(mesh):
@@ -61,11 +63,11 @@ def dataMeshFilter(mesh):
     res = {"Face numbers" : mesh.face_number(), "Vertex numbers" : mesh.vertex_number(), "Bounding Box Diagonal Size" : diagSize, "Moment order" : momentOrder(mesh),"PymeshLab Diag": mesh.bounding_box().diagonal(),"Size": [mesh.bounding_box().dim_x(),mesh.bounding_box().dim_y(),mesh.bounding_box().dim_z()]}
     return res
 
-def exportMeshesData():
-    pricetonPath = "./Models/PRINCETON/test"
-    LabeledPath = "./Models/LabeledDB_new"
-    meshesData1 = []
+def exportMeshesData(parentDir):
+    pricetonPath = "./"+parentDir+"/PRINCETON/test"
+    LabeledPath = "./"+parentDir+"/LabeledDB_new"
 
+    meshesData1 = []
     for dir in os.scandir(LabeledPath):
         FileIt =os.scandir(os.path.join(LabeledPath, dir.name))
         for file in FileIt:
@@ -73,8 +75,7 @@ def exportMeshesData():
             if data is not None :
                 meshesData1.append(data)
         FileIt.close()
-    writeData('dataLabeledDB.csv',meshesData1)
-
+    writeData("./"+parentDir+'/dataLabeledDB.csv',meshesData1)
     meshesData2 = []
     for dir in os.scandir(pricetonPath):
         FileIt =os.scandir(os.path.join(pricetonPath, dir.name))
@@ -83,8 +84,7 @@ def exportMeshesData():
             if data is not None:
                 meshesData2.append(data)
         FileIt.close()
-    writeData('dataPriceton.csv',meshesData2)
-
+    writeData("./"+parentDir+'/dataPriceton.csv',meshesData2)
     return meshesData1 + meshesData2
 
 
@@ -126,18 +126,15 @@ def getValuesList(field,dictList):
     return [dict[field] for dict in dictList]
 
 
-def dataVisualisation(list, feature, n_bins = 20,size_x=10, size_y=7):
+def dataVisualisation(list, feature, outputDir, n_bins = 20,size_x=10, size_y=7):
     fig, axs = plt.subplots(1, 1,figsize=(size_x, size_y),tight_layout=True)
-
     plt.xlabel(feature)
     plt.ylabel("Number of mesh(es)")
     plt.title('Numbers of meshes depending on '+feature.lower())
-
     axs.hist(list, bins=n_bins)
+    plt.savefig("./"+outputDir+"/"+feature.lower()+'.png')
 
-    plt.savefig("./output/"+feature.lower()+'.png')
 
-
-def plotFeatures(dictList,featuresList, n_bins=20, size_x=10, size_y=7):
+def plotFeatures(dictList, featuresList, outputDir, n_bins=20, size_x=10, size_y=7):
     for feature in featuresList:
-        dataVisualisation(getValuesList(feature,dictList),feature, n_bins,size_x, size_y)
+        dataVisualisation(getValuesList(feature,dictList),feature,outputDir, n_bins,size_x, size_y)
