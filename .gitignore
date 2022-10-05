@@ -99,6 +99,7 @@ target/
 # Polyscope
 .polyscope.ini
 imgui.ini
+output/
 
 # IPython
 profile_default/
