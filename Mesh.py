@@ -53,13 +53,13 @@ class Mesh:
                     self.ms.apply_filter('meshing_repair_non_manifold_vertices')
                     debugLog(os.path.realpath(self.meshPath) + " - ERROR : Failed to apply filter:  'meshing_surface_subdivision_loop' => Applying Non-Manifold Repair",debugLvl.ERROR)
             elif newStats[dataName.VERTEX_NUMBERS.value] > self.expectedVerts + self.eps:
-                self.ms.apply_filter('meshing_decimation_quadric_edge_collapse', targetperc= self.expectedVerts / oldStats[dataName.VERTEX_NUMBERS.value])
+                self.ms.apply_filter('meshing_decimation_quadric_edge_collapse', targetperc= self.expectedVerts / newStats[dataName.VERTEX_NUMBERS.value])
             newStats = self.dataFilter()
             i += 1
 
         # Extra turn of decimation (merging vertex) to reduce in range if laste iteration subdivide to above the range
         if newStats[dataName.VERTEX_NUMBERS.value] > self.expectedVerts + self.eps:
-            self.ms.apply_filter('meshing_decimation_quadric_edge_collapse',targetperc=self.expectedVerts / oldStats[dataName.VERTEX_NUMBERS.value])
+            self.ms.apply_filter('meshing_decimation_quadric_edge_collapse',targetperc=self.expectedVerts / newStats[dataName.VERTEX_NUMBERS.value])
         newStats = self.dataFilter()
 
         # Laplacian smooth to get a more uniformly distributed point cloud over the mesh

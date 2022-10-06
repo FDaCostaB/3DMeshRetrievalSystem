@@ -111,9 +111,9 @@ def XYZdataVisualisation(list, feature, outputDir,size_x=10, size_y=7):
     data = [getIndexList(0, list),getIndexList(1, list),getIndexList(2, list)]
     colors = ['red', 'yellow', 'blue']
     labels = ['x', 'y', 'z']
-    min = min(min(data[0]),min(data[1]),min(data[2]))
-    max = max(max(data[0]),max(data[1]),max(data[2]))
-    Lbins = [min+i*((max-min)/10) for i in range(11)]
+    minVal = min(data[0] + data[1] + data[2])
+    maxVal = max(data[0] + data[1] + data[2])
+    Lbins = [minVal+i*((maxVal-minVal)/10) for i in range(11)]
     axs.hist(data, Lbins,
              histtype='bar',
              stacked=False,

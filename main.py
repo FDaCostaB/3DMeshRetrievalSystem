@@ -6,7 +6,7 @@ from dataName import dataName
 
 
 if len(sys.argv) == 1:
-    # normaliseDB(10000, 1000)
+    normaliseDB(10000, 1000)
 
     modelsIO = DataIO('Models')
     modelsIO.plotHistograms(
