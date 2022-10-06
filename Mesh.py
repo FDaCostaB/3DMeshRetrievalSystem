@@ -1,0 +1,162 @@
+import os.path
+import pymeshlab
+import Math
+import polyscope as ps
+import numpy as np
+from pathlib import Path
+from dataName import dataName
+from Debug import debugLvl,debugLog
+
+class Mesh:
+    def __init__(self,meshPath):
+        self.meshPath = meshPath
+        self.ms = pymeshlab.MeshSet()
+        self.ms.load_new_mesh(meshPath)
+        self.ms.load_new_mesh(meshPath)
+        self.mesh = self.ms.current_mesh()
+        self.expectedVerts = 10000
+        self.eps = 1000
+
+    def dataFilter(self):
+        p1 = Path(self.meshPath)
+        category = os.path.relpath(p1.parent, p1.parent.parent)
+        fileType = os.path.splitext(os.path.realpath(self.meshPath))[1]
+        if fileType == ".obj" or fileType == ".off" :
+            for face in self.mesh.polygonal_face_list():
+                if len(face)==4 : raise Exception("Quads found")
+            out_dict = self.ms.get_geometric_measures()
+            size = [ self.mesh.bounding_box().dim_x(), self.mesh.bounding_box().dim_y(), self.mesh.bounding_box().dim_z()]
+            res = {dataName.CATEGORY.value : category, dataName.FACE_NUMBERS.value : self.mesh.face_number(), dataName.VERTEX_NUMBERS.value : self.mesh.vertex_number(),
+                   dataName.SIDE_SIZE.value : max(size), dataName.MOMENT.value : self.momentOrder(), dataName.SIZE.value : size, dataName.BARYCENTER.value : list(out_dict['shell_barycenter']),
+                   dataName.DIST_BARYCENTER.value : Math.dist(list(out_dict['shell_barycenter'])),dataName.PCA.value :list(out_dict['pca']), dataName.DIAGONAL.value : self.mesh.bounding_box().diagonal()}
+            return res
+
+    def refine(self, expectedVerts=None, eps=None):
+        LIMIT = 5
+        if expectedVerts is None: expectedVerts = self.expectedVerts
+        else: self.expectedVerts = expectedVerts
+        if eps is None: eps = self.eps
+        else: self.eps = eps
+
+
+        oldStats = self.dataFilter()
+        newStats = self.dataFilter()
+
+        # Subdivide or merge vertix up to five time to get in range [expectedVerts - eps, expectedVerts + eps]
+        i = 0
+        while ((newStats[dataName.VERTEX_NUMBERS.value] < expectedVerts - eps or newStats[dataName.VERTEX_NUMBERS.value] > self.expectedVerts + self.eps) and i < LIMIT):
+            if newStats[dataName.VERTEX_NUMBERS.value] < self.expectedVerts - self.eps:
+                try:
+                    self.ms.apply_filter('meshing_surface_subdivision_loop', iterations=1)
+                except:
+                    self.ms.apply_filter('meshing_repair_non_manifold_edges', method='Remove Faces')
+                    self.ms.apply_filter('meshing_repair_non_manifold_vertices')
+                    debugLog(os.path.realpath(self.meshPath) + " - ERROR : Failed to apply filter:  'meshing_surface_subdivision_loop' => Applying Non-Manifold Repair",debugLvl.ERROR)
+            elif newStats[dataName.VERTEX_NUMBERS.value] > self.expectedVerts + self.eps:
+                self.ms.apply_filter('meshing_decimation_quadric_edge_collapse', targetperc= self.expectedVerts / oldStats[dataName.VERTEX_NUMBERS.value])
+            newStats = self.dataFilter()
+            i += 1
+
+        # Extra turn of decimation (merging vertex) to reduce in range if laste iteration subdivide to above the range
+        if newStats[dataName.VERTEX_NUMBERS.value] > self.expectedVerts + self.eps:
+            self.ms.apply_filter('meshing_decimation_quadric_edge_collapse',targetperc=self.expectedVerts / oldStats[dataName.VERTEX_NUMBERS.value])
+        newStats = self.dataFilter()
+
+        # Laplacian smooth to get a more uniformly distributed point cloud over the mesh
+        try:
+            self.ms.apply_filter('apply_coord_laplacian_smoothing', stepsmoothnum=3)
+        except:
+            debugLog(os.path.realpath(self.meshPath) + " - ERROR : Failed to apply filter:  'apply_coord_laplacian_smoothing.",debugLvl.ERROR)
+        if newStats[dataName.VERTEX_NUMBERS.value] < self.expectedVerts - self.eps or newStats[
+            dataName.VERTEX_NUMBERS.value] > self.expectedVerts + self.eps:
+            debugLog(os.path.realpath(self.meshPath) + ' : Before - ' + str(oldStats[dataName.VERTEX_NUMBERS.value]) +
+                     ' | After - ' + str(newStats[dataName.VERTEX_NUMBERS.value]), debugLvl.INFO)
+    def momentOrder(self):
+        faces = self.mesh.face_matrix()
+        vertex = self.mesh.vertex_matrix()
+        acc = [0, 0, 0]
+        x = 0
+        y = 1
+        z = 2
+        for tri in faces:
+            a = vertex[tri[0]]
+            b = vertex[tri[1]]
+            c = vertex[tri[2]]
+            center = [(a[x] + b[x] + c[x]) / 3, (a[y] + b[y] + c[y]) / 3, (a[z] + b[z] + c[z]) / 3]
+            acc[x] += np.sign(center[x]) * (center[x]) ** 2
+            acc[y] += np.sign(center[y]) * (center[y]) ** 2
+            acc[z] += np.sign(center[z]) * (center[z]) ** 2
+        return acc
+
+    def flipMomentTest(self, doDebug=False):
+        moment = self.momentOrder()
+        if (moment[0] < 0 and doDebug): debugLog(os.path.realpath(self.meshPath) + ' : Flip x axis',debugLvl.DEBUG)
+        if (moment[1] < 0 and doDebug): debugLog(os.path.realpath(self.meshPath) + ' : Flip y axis',debugLvl.DEBUG)
+        if (moment[2] < 0 and doDebug): debugLog(os.path.realpath(self.meshPath) + ' : Flip z axis',debugLvl.DEBUG)
+        self.ms.apply_matrix_flip_or_swap_axis(flipx=moment[0] < 0, flipy=moment[1] < 0, flipz=moment[2] < 0)
+
+    def normalise(self, showDebug=False):
+        stats = self.dataFilter()
+        if (showDebug):
+            self.printProperties()
+
+        self.ms.compute_matrix_from_translation(traslmethod='XYZ translation', axisx=-1 * stats[dataName.BARYCENTER.value][0],
+                                           axisy=-1 * stats[dataName.BARYCENTER.value][1],
+                                           axisz=-1 * stats[dataName.BARYCENTER.value][2])
+        self.ms.compute_matrix_by_principal_axis()
+        # self.ms.apply_matrix_flip_or_swap_axis(swapxz=True)
+        self.ms.compute_matrix_from_scaling_or_normalization(customcenter=stats[dataName.BARYCENTER.value], unitflag=True)
+        self.flipMomentTest(showDebug)
+
+        if (showDebug):
+            self.printProperties()
+            self.compare()
+
+    def resample(self, expectedVerts=10000, eps=1000, showComparison=False):
+        if showComparison:
+            self.printProperties()
+
+        self.ms.apply_filter('meshing_remove_duplicate_faces')
+        self.ms.apply_filter('meshing_remove_duplicate_vertices')
+        self.ms.apply_filter('meshing_remove_unreferenced_vertices')
+        self.expectedVerts = expectedVerts
+        self.eps = eps
+        self.refine()
+        self.normalise()
+
+        if showComparison:
+            self.printProperties()
+            self.ms.show_polyscope()
+            # self.compare()
+
+    def compare(self):
+        ps.init()
+        ps.register_point_cloud("Before cloud points", self.ms.mesh(0).vertex_matrix())
+        ps.register_surface_mesh("Before Mesh", self.ms.mesh(0).vertex_matrix(), self.ms.mesh(0).face_matrix())
+        ps.register_point_cloud("After cloud points", self.ms.mesh(1).vertex_matrix())
+        ps.register_surface_mesh("After Mesh", self.ms.mesh(1).vertex_matrix(), self.ms.mesh(1).face_matrix())
+        ps.show()
+
+    # ----- I/O features -----
+
+    def printProperties(self):
+        stats = self.dataFilter()
+        debugLog(
+            os.path.realpath(self.meshPath) + ' : Size :' + str(stats[dataName.SIZE.value]) + ', Shell Barycenter : ' + str(stats[dataName.BARYCENTER.value]) + ', Moment order' + str(
+                np.sign(stats[dataName.MOMENT.value])) +'\nPCA :\n'+stats[dataName.PCA.value],debugLvl.DEBUG)
+
+    def saveMesh(self):
+        # Same path with output instead of Model
+        newPath = os.path.join('./output',os.path.relpath(self.meshPath,'./Models'))
+
+        #Create parent dir if it doesn't exist
+        os.makedirs(os.path.dirname(newPath), exist_ok=True)
+
+        #Save the file in off format
+        self.ms.save_current_mesh(os.path.splitext(newPath)[0]+".off")
+
+    def render(self):
+        ps.init()
+        ps.register_point_cloud("my points", self.ms.mesh(1).vertex_matrix())
+        ps.register_surface_mesh("my mesh", self.ms.mesh(1).vertex_matrix(), self.ms.mesh(1).face_matrix())
+        ps.show()

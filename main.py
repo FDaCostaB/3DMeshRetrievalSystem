@@ -1,19 +1,22 @@
-import MeshManip
-import render as rd
 import sys
-import data
-import pymeshlab
+from FileIO import DataIO, normaliseDB
+from Debug import debugLvl,debugLog
+from Mesh import Mesh
+from dataName import dataName
 
 
-if (len(sys.argv) == 2):
-    ms = pymeshlab.MeshSet()
-    # MeshManip.normalise(sys.argv[1], ms, True)
-    MeshManip.resample(sys.argv[1], './output', ms, 10000, 1000)
-else :
-    data.normaliseVertex(10000,1000)
-    features = data.exportMeshesData('Models')
-    data.plotFeatures(features, ['Category'], 26, 25, 10,'Models')
-    data.plotFeatures(features, ['Face numbers', 'Vertex numbers', 'Bounding Box Diagonal Size'],'Models')
-    features = data.exportMeshesData('output')
-    data.plotFeatures(features, ['Category'], 26, 25, 10,'output')
-    data.plotFeatures(features, ['Face numbers', 'Vertex numbers', 'Bounding Box Diagonal Size'],'output')
+if len(sys.argv) == 1:
+    # normaliseDB(10000, 1000)
+
+    modelsIO = DataIO('Models')
+    modelsIO.plotHistograms(
+        [dataName.CATEGORY, dataName.FACE_NUMBERS, dataName.VERTEX_NUMBERS, dataName.SIDE_SIZE, dataName.DIST_BARYCENTER,
+         dataName.PCA])
+
+    outputIO = DataIO('output')
+    outputIO.plotHistograms(
+        [dataName.CATEGORY, dataName.FACE_NUMBERS, dataName.VERTEX_NUMBERS, dataName.SIDE_SIZE, dataName.DIST_BARYCENTER,
+         dataName.PCA])
+elif len(sys.argv) == 2:
+    ms = Mesh(sys.argv[1])
+    ms.resample(10000, 1000, True)
