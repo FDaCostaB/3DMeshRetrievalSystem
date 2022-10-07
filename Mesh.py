@@ -12,7 +12,6 @@ class Mesh:
         self.meshPath = meshPath
         self.ms = pymeshlab.MeshSet()
         self.ms.load_new_mesh(meshPath)
-        self.ms.load_new_mesh(meshPath)
         self.mesh = self.ms.current_mesh()
         self.expectedVerts = 10000
         self.eps = 1000
@@ -42,9 +41,9 @@ class Mesh:
         oldStats = self.dataFilter()
         newStats = self.dataFilter()
 
-        # Subdivide or merge vertix up to five time to get in range [expectedVerts - eps, expectedVerts + eps]
+        # Subdivide vertix up to five time to get in range [expectedVerts - eps, expectedVerts + eps]
         i = 0
-        while ((newStats[dataName.VERTEX_NUMBERS.value] < expectedVerts - eps or newStats[dataName.VERTEX_NUMBERS.value] > self.expectedVerts + self.eps) and i < LIMIT):
+        while (newStats[dataName.VERTEX_NUMBERS.value] < expectedVerts - eps and i < LIMIT):
             if newStats[dataName.VERTEX_NUMBERS.value] < self.expectedVerts - self.eps:
                 try:
                     self.ms.apply_filter('meshing_surface_subdivision_loop', iterations=1)
@@ -52,12 +51,10 @@ class Mesh:
                     self.ms.apply_filter('meshing_repair_non_manifold_edges', method='Remove Faces')
                     self.ms.apply_filter('meshing_repair_non_manifold_vertices')
                     debugLog(os.path.realpath(self.meshPath) + " - ERROR : Failed to apply filter:  'meshing_surface_subdivision_loop' => Applying Non-Manifold Repair",debugLvl.ERROR)
-            elif newStats[dataName.VERTEX_NUMBERS.value] > self.expectedVerts + self.eps:
-                self.ms.apply_filter('meshing_decimation_quadric_edge_collapse', targetperc= self.expectedVerts / newStats[dataName.VERTEX_NUMBERS.value])
             newStats = self.dataFilter()
             i += 1
 
-        # Extra turn of decimation (merging vertex) to reduce in range if laste iteration subdivide to above the range
+        # Decimation (merging vertex) to reduce in range [expectedVerts - eps, expectedVerts + eps]
         if newStats[dataName.VERTEX_NUMBERS.value] > self.expectedVerts + self.eps:
             self.ms.apply_filter('meshing_decimation_quadric_edge_collapse',targetperc=self.expectedVerts / newStats[dataName.VERTEX_NUMBERS.value])
         newStats = self.dataFilter()
@@ -71,6 +68,7 @@ class Mesh:
             dataName.VERTEX_NUMBERS.value] > self.expectedVerts + self.eps:
             debugLog(os.path.realpath(self.meshPath) + ' : Before - ' + str(oldStats[dataName.VERTEX_NUMBERS.value]) +
                      ' | After - ' + str(newStats[dataName.VERTEX_NUMBERS.value]), debugLvl.INFO)
+
     def momentOrder(self):
         faces = self.mesh.face_matrix()
         vertex = self.mesh.vertex_matrix()
@@ -88,12 +86,35 @@ class Mesh:
             acc[z] += np.sign(center[z]) * (center[z]) ** 2
         return acc
 
+    def swapAxis(self):
+        stats = self.dataFilter()
+        pca = stats[dataName.PCA.value]
+        for i in range(3):
+            maxInd = 0
+            for j in range(0,3):
+                if abs(float(pca[j][i])) >= abs(float(pca[maxInd][i])) :
+                    maxInd = j
+            if maxInd != i :
+                if (i==0 and maxInd==1) or (i==1 and maxInd==0):
+                    self.ms.compute_matrix_from_rotation(rotaxis='Z axis', rotcenter='barycenter', angle=90)
+                elif (i==0 and maxInd==2) or (i==2 and maxInd==1):
+                    self.ms.compute_matrix_from_rotation(rotaxis='Y axis', rotcenter='barycenter', angle=90)
+                elif (i==1 and maxInd==2) or (i==2 and maxInd==1):
+                    self.ms.compute_matrix_from_rotation(rotaxis='X axis', rotcenter='barycenter', angle=90)
+                stats = self.dataFilter()
+                pca = stats[dataName.PCA.value]
+
     def flipMomentTest(self, doDebug=False):
         moment = self.momentOrder()
-        if (moment[0] < 0 and doDebug): debugLog(os.path.realpath(self.meshPath) + ' : Flip x axis',debugLvl.DEBUG)
-        if (moment[1] < 0 and doDebug): debugLog(os.path.realpath(self.meshPath) + ' : Flip y axis',debugLvl.DEBUG)
-        if (moment[2] < 0 and doDebug): debugLog(os.path.realpath(self.meshPath) + ' : Flip z axis',debugLvl.DEBUG)
-        self.ms.apply_matrix_flip_or_swap_axis(flipx=moment[0] < 0, flipy=moment[1] < 0, flipz=moment[2] < 0)
+        if (moment[0] < 0 and doDebug):
+            self.ms.compute_matrix_from_rotation(rotaxis='X axis',rotcenter='barycenter',angle=180)
+            debugLog(os.path.realpath(self.meshPath) + ' : Flip x axis',debugLvl.DEBUG)
+        if (moment[1] < 0 and doDebug):
+            self.ms.compute_matrix_from_rotation(rotaxis='Y axis', rotcenter='barycenter', angle=180)
+            debugLog(os.path.realpath(self.meshPath) + ' : Flip y axis',debugLvl.DEBUG)
+        if (moment[2] < 0 and doDebug):
+            self.ms.compute_matrix_from_rotation(rotaxis='Z axis', rotcenter='barycenter', angle=180)
+            debugLog(os.path.realpath(self.meshPath) + ' : Flip z axis',debugLvl.DEBUG)
 
     def normalise(self, showDebug=False):
         stats = self.dataFilter()
@@ -104,13 +125,14 @@ class Mesh:
                                            axisy=-1 * stats[dataName.BARYCENTER.value][1],
                                            axisz=-1 * stats[dataName.BARYCENTER.value][2])
         self.ms.compute_matrix_by_principal_axis()
-        # self.ms.apply_matrix_flip_or_swap_axis(swapxz=True)
         self.ms.compute_matrix_from_scaling_or_normalization(customcenter=stats[dataName.BARYCENTER.value], unitflag=True)
+        self.swapAxis()
         self.flipMomentTest(showDebug)
 
         if (showDebug):
             self.printProperties()
             self.compare()
+
 
     def resample(self, expectedVerts=10000, eps=1000, showComparison=False):
         if showComparison:
@@ -130,11 +152,14 @@ class Mesh:
             # self.compare()
 
     def compare(self):
+        if len(self.ms) == 1 :
+            self.ms.load_new_mesh(self.meshPath)
+            self.ms.set_current_mesh(0)
         ps.init()
-        ps.register_point_cloud("Before cloud points", self.ms.mesh(0).vertex_matrix())
-        ps.register_surface_mesh("Before Mesh", self.ms.mesh(0).vertex_matrix(), self.ms.mesh(0).face_matrix())
-        ps.register_point_cloud("After cloud points", self.ms.mesh(1).vertex_matrix())
-        ps.register_surface_mesh("After Mesh", self.ms.mesh(1).vertex_matrix(), self.ms.mesh(1).face_matrix())
+        ps.register_point_cloud("Before cloud points", self.ms.mesh(1).vertex_matrix())
+        ps.register_surface_mesh("Before Mesh", self.ms.mesh(1).vertex_matrix(), self.ms.mesh(1).face_matrix())
+        ps.register_point_cloud("After cloud points", self.ms.mesh(0).vertex_matrix())
+        ps.register_surface_mesh("After Mesh", self.ms.mesh(0).vertex_matrix(), self.ms.mesh(0).face_matrix())
         ps.show()
 
     # ----- I/O features -----
@@ -142,8 +167,8 @@ class Mesh:
     def printProperties(self):
         stats = self.dataFilter()
         debugLog(
-            os.path.realpath(self.meshPath) + ' : Size :' + str(stats[dataName.SIZE.value]) + ', Shell Barycenter : ' + str(stats[dataName.BARYCENTER.value]) + ', Moment order' + str(
-                np.sign(stats[dataName.MOMENT.value])) +'\nPCA :\n'+stats[dataName.PCA.value],debugLvl.DEBUG)
+            os.path.realpath(self.meshPath) + ' : Size :' + str(stats[dataName.SIZE.value]) + ', Shell Barycenter : ' + str(stats[dataName.BARYCENTER.value]) + ', Moment order' +
+            str(np.sign(stats[dataName.MOMENT.value])) +'\nPCA :\n'+ str(stats[dataName.PCA.value]),debugLvl.DEBUG)
 
     def saveMesh(self):
         # Same path with output instead of Model

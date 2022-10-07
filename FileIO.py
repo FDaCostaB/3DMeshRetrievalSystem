@@ -22,6 +22,10 @@ class DataIO:
                     mesh = Mesh(os.path.realpath(file))
                     data = mesh.dataFilter()
                     if data is not None : meshesData1.append(data)
+                    mainComponentPCA = getIndexList(0, data[dataName.PCA.value])
+                    if abs(float(mainComponentPCA[0])) < 0.8:
+                        debugLog(os.path.realpath(file),debugLvl.WARNING)
+                        debugLog(str(mainComponentPCA),debugLvl.WARNING)
             FileIt.close()
         self.writeData('dataLabeledDB.csv',meshesData1)
 
@@ -46,16 +50,15 @@ class DataIO:
         csvDictWriter.writeheader()
         csvDictWriter.writerows(data)
 
-
     def plotFeatures(self, featuresList, n_bins=20, size_x=10, size_y=7):
         for feature in featuresList:
             dataVisualisation(getFieldList(feature, self.dictList), feature, self.outputDir, n_bins, size_x, size_y)
 
-
     def plot3DFeatures(self, featuresList):
         for feature in featuresList:
             if dataName.PCA.value == feature:
-                XYZdataVisualisation(getIndexList(0, getFieldList(feature, self.dictList)), feature, self.outputDir)
+                mainComponentPCA = getIndexList(0, getFieldList(feature, self.dictList))
+                XYZdataVisualisation(mainComponentPCA, feature, self.outputDir)
             else :
                 XYZdataVisualisation(getFieldList(feature, self.dictList), feature, self.outputDir)
 
@@ -72,7 +75,7 @@ class DataIO:
 def normaliseDB(expectedVerts,eps):
     totalMesh = 0
     for dir in os.scandir("./Models/PRINCETON/test"):
-        FileIt =os.scandir(os.path.join("./Models/PRINCETON/test", dir.name))
+        FileIt = os.scandir(os.path.join("./Models/PRINCETON/test", dir.name))
         for file in FileIt:
             fileType = os.path.splitext(os.path.realpath(file))[1]
             if fileType == ".obj" or fileType == ".off":
