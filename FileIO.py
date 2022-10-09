@@ -102,7 +102,7 @@ def dataVisualisation(list, feature, outputDir, n_bins=20, size_x=10, size_y=7):
 
     plt.xlabel(feature)
     plt.ylabel("Number of mesh(es)")
-    # if(feature == dataName.SIDE_SIZE.value) : n_bins = [0.95+i*0.01 for i in range(11)]
+    if(feature == dataName.SIDE_SIZE.value and outputDir=='output') : n_bins = [0.95+i*0.01 for i in range(11)]
     axs.hist(list, bins=n_bins)
     plt.savefig("./" + outputDir + "/" + feature.lower() + '.png')
 
