@@ -1,22 +1,13 @@
 import sys
-from FileIO import DataIO, normaliseDB
-from Debug import debugLvl,debugLog
+from FileIO import normaliseDB, plotDB
 from Mesh import Mesh
-from dataName import dataName
-
 
 if len(sys.argv) == 1:
-    normaliseDB(10000, 1000)
-    # plotDB('Models')
-    outputIO = DataIO('output')
-    outputIO.plotHistograms(
-        [dataName.CATEGORY, dataName.FACE_NUMBERS, dataName.VERTEX_NUMBERS, dataName.SIDE_SIZE, dataName.DIST_BARYCENTER,
-         dataName.PCA])
+    # normaliseDB(10000, 1000)
+    plotDB('Models')
+    # plotDB('output')
 elif len(sys.argv) == 2:
     ms = Mesh(sys.argv[1])
-    ms.resample(10000, 1000, True)
+    ms.render()
+    # ms.resample(10000, 1000, True)
 
-def plotDB(folder):
-    modelsIO = DataIO(folder)
-    modelsIO.plotHistograms([dataName.CATEGORY, dataName.FACE_NUMBERS, dataName.VERTEX_NUMBERS, dataName.SIDE_SIZE,
-                             dataName.DIST_BARYCENTER, dataName.PCA])

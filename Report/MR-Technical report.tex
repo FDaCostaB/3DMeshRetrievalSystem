@@ -85,15 +85,116 @@ Our project has three main dependencies. "PyMeshLab", "Polyscope", and "Numpy", 
 We have two scripts for this step called "main.py" and "render.py" Where "main.py" verifies the console arguments and calls the render function from "render.py". The first argument passed through is the path of the file. \\ \\
 In "render.py", there is a function called "render". This function loads the mesh and displays the vertices and the mesh of the 3D object. PyMeshLab has a built-in function ".show\_polyscope" that shows a mesh. While we found it more interesting to override it with polyscope functions to have more control if we need to upgrade anything. The result of the mesh visualization script can be found in Figure \ref{fig:ant-mesh}. The 3D mesh visualization windows offered many functionalities.
 
-	
-	
 \begin{figure}[h!]
 \begin{center}
-  \includegraphics[width=0.5\textwidth]{ant}
+  \includegraphics[width=0.5\textwidth]{picture/ant}
   \caption{Visualisation of an ant mesh}
   \label{fig:ant-mesh}
   \end{center}
 \end{figure}
+
+\section{Shape analysis}
+To avoid too many disparities between several meshes in the database, we wanted to normalize some features of the database we implemented a function to retrieve generic information from a mesh. Towards the idea of normalizing the number of vertices, the position, the scale, the alignment, and the orientation. We have implemented a filter to retrieve the number of vertices, barycenter, the size of the bounding box, the vector given by principal component analysis, and the second-order moment of mass.
+	
+	We have to determine an order for all the different steps as a transformation can have an impact on the following one. Mainly any transformation T has to be performed before T' if T have a side effect on the property that T' normalize. First of all, we begin with the numbers of vertices to obtain a uniform description of the shape of the poorly sampled mesh. This makes some computation easier as we can assume that each vertex describes the same amount of mass. In the first place, we normalize the position as it does not impact any other properties. We remark that any rotation impacts the size of the bounding box and the flipping so we compute alignment with the axis given by PCA in second place and the flipping in third place as both are a matter of rotation. In the fourth place, we scale the mesh to the unit cube as it will not influence any of the previous properties (namely the position, scaling, or alignment with the most spread axis given by PCA). The flipping operation or scaling operation don't influence each other so we could have computed the last two transformations in a different order.
+	
+We will go into further detail, analyzing the descriptors for each feature now.
+
+
+\subsection{Vertex numbers}
+\label{subsec:vertex numbers}
+
+\subsection{Position}
+
+One way of normalizing the position is to translate the barycenter at the origin of the 3D spaces. PyMeshLab have an in-built function made for this. Here is one way to implement such functionalities, first the barycenter of the mesh needs to be computed. To compute this we have to compute the average position of the center of all faces weighted by the area of the face. Each vertex doesn’t describe the same amount of mass, in particular, if the vertices are non-uniformly distributed over the mesh.  Although if the repartition of the vertex is uniform (as we ensured in section \ref{subsec:vertex numbers}), we assume that each vertex represents the same amount of mass. This assumption made we can just compute the average x,y, and z of all the vertex of the mesh. Here is the formula to compute the barycenter the i-th coordinate of the barycenter ($i \in \{x,y,z\}$) :
+
+$$ b_i = \frac{\sum_{v \in V} v_i}{|V|}  $$ (with i the i-th coordinate of v ($i \in \{x,y,z\}$)and V the set of vertex of the mesh.)
+	
+	Once the barycenter is computed we just translate each vertex by the $\overrightarrow{BO}$ vector (with B the barycenter and O the origin of the 3D reference space). We can compare the distance of the barycenter to the origin for each mesh before and after normalization.
+	
+\begin{figure}[h!]
+\begin{center}
+  \includegraphics[width=0.5\textwidth]{picture/Initial barycenter}
+  \caption{Position of the barycenter to the origin for the initial 3D mesh database}
+  \label{fig:barycenter-before}
+  \end{center}
+\end{figure}
+
+\begin{figure}[h!]
+\begin{center}
+  \includegraphics[width=0.5\textwidth]{picture/Normalised barycenter}
+  \caption{Position of the barycenter to the origin after normalisation}
+  \label{fig:barycenter-after}
+  \end{center}
+\end{figure}
+
+As we can see after normalization (see Fig.\ref{fig:barycenter-after}) all the mesh have their barycenter at or close to the center.
+
+\subsection{Rotation}
+
+	We use a PyMeshLab in-built function to compute the eigenvector of the 3D mesh. The function computes the eigenvector of the covariance matrix and aligns the shape with them. We could implement this by computing the covariance matrix and extracting the eigenvector from it but the library used is reliable and it saves some testing and debugging efforts. The covariance matrix is computed with the following formula :
+	$$ C = \begin{pmatrix}
+   \sigma(x,x) & \sigma(x,y) & \sigma(x,z) \\
+   \sigma(y,x) & \sigma(y,y) & \sigma(y,z) \\
+   \sigma(z,x) & \sigma(z,y) & \sigma(z,z)
+\end{pmatrix} $$
+
+where $ \sigma(x,y) = \frac{1}{n-1} \sum\limits_{i=1}^n ( x_i - \bar{x} ) $ the co-variance of x with respect to y
+	
+	To  implement the rotation we could just compute the coordinate $(\overrightarrow{OV}.E_x, \overrightarrow{OV}.E_y, \overrightarrow{OV}.E_z)$ (with O the origin and V the vertex for which we compute the new coordinate) i.e the projection of the vertex on the eigenvector corresponding to a new axis is the new coordinate on this axis.
+	
+	We can observe the effect of the normalization of the rotation (see Figure \ref{fig:PCA-after}.
+
+\begin{figure}[h!]
+\begin{center}
+  \includegraphics[width=0.5\textwidth]{picture/Initial pca}
+  \caption{Value of the main eigenvector for the initial 3D mesh database}
+  \label{fig:PCA-before}
+  \end{center}
+\end{figure}
+
+\begin{figure}[h!]
+\begin{center}
+  \includegraphics[width=0.5\textwidth]{picture/Normalised pca}
+  \caption{Value of the main eigenvector after normalisation}
+  \label{fig:PCA-after}
+  \end{center}
+\end{figure}
+	
+	We see that the axis where the vertex are the most spread is aligned with the x-axis after normalization. It means that after normalization the main eigenvector given by the PCA looks like (1,0,0) therefore the mesh is oriented as expected.
+	
+\subsection{Orientation}
+	We now need to normalize the orientation. Determine if flipping along an axis is needed based on the moment test. We compute the second-order moment of the area with respect to a given axis, if it is negative we rotate the mesh of 180° around this axis to inverse the momentum.
+	The second-order moment of the area with respect to a given axis is computed with this given formula :
+	$$ f_i = \sum_{t} sign(c_{t,i})(c_{t,i})^2  $$ (with $c_{t,i}$ the i-th coordinate of center of triangle T ($i \in \{x,y,z\}$)
+	
+
+\subsection{Scaling}
+	The objective here is to scale the mesh to fit in the unit cube of the 3D space. As we want all axis to be scaled with the coefficient it means that the longest side of the bounding box has to be one and the other might be lower or equal (in the case of a cube bounding box).
+	We compute two points that will describe the bounding box as follows:
+	$$min\_box = (\underset{v \in V}{min}(v_x),\underset{v \in V}{min}(v_y),\underset{v \in V}{min}(v_z)) $$ and $$max\_box = (\underset{v \in V}{max}(v_x), \underset{v \in V}{max}(v_y), \underset{v \in V}{max}(v_z)$$ with V the set of vertex of the mesh.
+	We define the length of the bounding box as following, and for the rest of the report :
+	$$ |Bounding\_box| = max(\underset{v \in V}{max\_box_i}) - \underset{v \in V}{max\_box_i}))$$ (with i the i-th coordinate of v ($i \in \{x,y,z\}$)and V the set of vertex of the mesh.)
+	The definition match what we can call the longest side of the bounding box. The normalize this length to one we multiply each vertex by the inverse of the longest side of the bounding box to scale the side to one. We can observe the effect of the transformation in Figure \ref{fig:box-size-after}.
+
+\begin{figure}[h!]
+\begin{center}
+  \includegraphics[width=0.5\textwidth]{picture/Initial size of biggest bounding box side}
+  \caption{size of biggest bounding box side for the initial 3D mesh database}
+  \label{fig:box-size-before}
+  \end{center}
+\end{figure}
+
+\begin{figure}[h!]
+\begin{center}
+  \includegraphics[width=0.5\textwidth]{picture/Normalised size of biggest bounding box side}
+  \caption{Size of biggest bounding box side after normalisation}
+  \label{fig:box-size-after}
+  \end{center}
+\end{figure}
+
+In comparison, with the initial Database (see Figure \ref{fig:box-size-before}) we can deduce that the size of the bounding box has been normalizing around one. After an analysis, we have seen that every mesh has the size of its bounding box in $1\pm 1^{-6}$ which might be caused by the imprecision of python computing the inverse of the initial size of the bounding box.
+
 %\section*{Acknowledgements}
 %Anyone to thank/credit for helping your team along the way? This is the place to do it.
 \medskip

@@ -102,7 +102,7 @@ def dataVisualisation(list, feature, outputDir, n_bins=20, size_x=10, size_y=7):
 
     plt.xlabel(feature)
     plt.ylabel("Number of mesh(es)")
-    plt.title('Numbers of meshes depending on ' + feature.lower())
+    # if(feature == dataName.SIDE_SIZE.value) : n_bins = [0.95+i*0.01 for i in range(11)]
     axs.hist(list, bins=n_bins)
     plt.savefig("./" + outputDir + "/" + feature.lower() + '.png')
 
@@ -111,21 +111,13 @@ def XYZdataVisualisation(list, feature, outputDir,size_x=10, size_y=7):
 
     fig, axs = plt.subplots(1,1,figsize=(size_x, size_y), tight_layout=True)
 
-    data = [getIndexList(0, list),getIndexList(1, list),getIndexList(2, list)]
-    colors = ['red', 'yellow', 'blue']
+    data = [getIndexList(0, list, feature == dataName.PCA.value), getIndexList(1, list, feature == dataName.PCA.value), getIndexList(2, list, feature == dataName.PCA.value)]
+    colors = ['blue', 'red', 'yellow']
     labels = ['x', 'y', 'z']
     minVal = min(data[0] + data[1] + data[2])
     maxVal = max(data[0] + data[1] + data[2])
     Lbins = [minVal+i*((maxVal-minVal)/10) for i in range(11)]
-    axs.hist(data, Lbins,
-             histtype='bar',
-             stacked=False,
-             fill=True,
-             label=labels,
-             alpha=0.8,  # opacity of the bars
-             color=colors,
-             edgecolor="k")
-    plt.title('Numbers of meshes depending on ' + feature.lower())
+    axs.hist(data, Lbins, histtype='bar', stacked=False, fill=True, label=labels, alpha=0.8, color=colors, edgecolor="k")
     plt.xticks(Lbins)
     plt.xlabel(feature)
     plt.ylabel('count')
@@ -139,5 +131,12 @@ def getFieldList(field,dictList):
 
 
 # From a List of List (listList) retrieve a list of the i-th element of each List
-def getIndexList(i,listList):
-    return [list[i] for list in listList]
+def getIndexList(i,listList, doAbs=False):
+    if doAbs:
+        return [abs(list[i]) for list in listList]
+    else :
+        return [list[i] for list in listList]
+
+def plotDB(folder):
+    dataIO = DataIO(folder)
+    dataIO.plotHistograms([dataName.CATEGORY, dataName.FACE_NUMBERS, dataName.VERTEX_NUMBERS, dataName.SIDE_SIZE, dataName.DIST_BARYCENTER, dataName.PCA])

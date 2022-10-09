@@ -67,7 +67,7 @@ class Mesh:
         if newStats[dataName.VERTEX_NUMBERS.value] < self.expectedVerts - self.eps or newStats[
             dataName.VERTEX_NUMBERS.value] > self.expectedVerts + self.eps:
             debugLog(os.path.realpath(self.meshPath) + ' : Before - ' + str(oldStats[dataName.VERTEX_NUMBERS.value]) +
-                     ' | After - ' + str(newStats[dataName.VERTEX_NUMBERS.value]), debugLvl.INFO)
+                     ' | After - ' + str(newStats[dataName.VERTEX_NUMBERS.value]), debugLvl.WARNING)
 
     def momentOrder(self):
         faces = self.mesh.face_matrix()
@@ -125,18 +125,18 @@ class Mesh:
                                            axisy=-1 * stats[dataName.BARYCENTER.value][1],
                                            axisz=-1 * stats[dataName.BARYCENTER.value][2])
         self.ms.compute_matrix_by_principal_axis()
-        self.ms.compute_matrix_from_scaling_or_normalization(customcenter=stats[dataName.BARYCENTER.value], unitflag=True)
         self.swapAxis()
         self.flipMomentTest(showDebug)
+        stats = self.dataFilter()
+        self.ms.compute_matrix_from_scaling_or_normalization(axisx=1/stats[dataName.SIDE_SIZE.value],scalecenter='barycenter', uniformflag=True)
 
         if (showDebug):
             self.printProperties()
             self.compare()
 
-
     def resample(self, expectedVerts=10000, eps=1000, showComparison=False):
-        if showComparison:
-            self.printProperties()
+        # if showComparison:
+        #    self.printProperties()
 
         self.ms.apply_filter('meshing_remove_duplicate_faces')
         self.ms.apply_filter('meshing_remove_duplicate_vertices')
@@ -148,8 +148,7 @@ class Mesh:
 
         if showComparison:
             self.printProperties()
-            self.ms.show_polyscope()
-            # self.compare()
+            self.compare()
 
     def compare(self):
         if len(self.ms) == 1 :
@@ -167,7 +166,7 @@ class Mesh:
     def printProperties(self):
         stats = self.dataFilter()
         debugLog(
-            os.path.realpath(self.meshPath) + ' : Size :' + str(stats[dataName.SIZE.value]) + ', Shell Barycenter : ' + str(stats[dataName.BARYCENTER.value]) + ', Moment order' +
+            os.path.realpath(self.meshPath) + ' : Size :' + str(stats[dataName.SIDE_SIZE.value]) + ', Shell Barycenter : ' + str(stats[dataName.BARYCENTER.value]) + ', Moment order' +
             str(np.sign(stats[dataName.MOMENT.value])) +'\nPCA :\n'+ str(stats[dataName.PCA.value]),debugLvl.DEBUG)
 
     def saveMesh(self):
@@ -182,6 +181,6 @@ class Mesh:
 
     def render(self):
         ps.init()
-        ps.register_point_cloud("my points", self.ms.mesh(1).vertex_matrix())
-        ps.register_surface_mesh("my mesh", self.ms.mesh(1).vertex_matrix(), self.ms.mesh(1).face_matrix())
+        ps.register_point_cloud("my points", self.ms.mesh(0).vertex_matrix())
+        ps.register_surface_mesh("my mesh", self.ms.mesh(0).vertex_matrix(), self.ms.mesh(0).face_matrix())
         ps.show()
