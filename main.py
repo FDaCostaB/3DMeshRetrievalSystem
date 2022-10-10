@@ -8,6 +8,5 @@ if len(sys.argv) == 1:
     # plotDB('output')
 elif len(sys.argv) == 2:
     ms = Mesh(sys.argv[1])
-    ms.render()
+    ms.getComponentsFaceList(True)
     # ms.resample(10000, 1000, True)
-
