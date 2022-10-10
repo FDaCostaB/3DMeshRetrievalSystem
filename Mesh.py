@@ -5,10 +5,11 @@ import polyscope as ps
 import numpy as np
 from pathlib import Path
 from dataName import dataName
-from Debug import debugLvl,debugLog
+from Debug import debugLvl, debugLog
+
 
 class Mesh:
-    def __init__(self,meshPath):
+    def __init__(self, meshPath):
         self.meshPath = meshPath
         self.ms = pymeshlab.MeshSet()
         self.ms.load_new_mesh(meshPath)
@@ -27,7 +28,7 @@ class Mesh:
             size = [ self.mesh.bounding_box().dim_x(), self.mesh.bounding_box().dim_y(), self.mesh.bounding_box().dim_z()]
             res = {dataName.CATEGORY.value : category, dataName.FACE_NUMBERS.value : self.mesh.face_number(), dataName.VERTEX_NUMBERS.value : self.mesh.vertex_number(),
                    dataName.SIDE_SIZE.value : max(size), dataName.MOMENT.value : self.momentOrder(), dataName.SIZE.value : size, dataName.BARYCENTER.value : list(out_dict['shell_barycenter']),
-                   dataName.DIST_BARYCENTER.value : Math.dist(list(out_dict['shell_barycenter'])),dataName.PCA.value :list(out_dict['pca']), dataName.DIAGONAL.value : self.mesh.bounding_box().diagonal()}
+                   dataName.DIST_BARYCENTER.value : Math.length(list(out_dict['shell_barycenter'])),dataName.PCA.value :list(out_dict['pca']), dataName.DIAGONAL.value : self.mesh.bounding_box().diagonal()}
             return res
 
     def refine(self, expectedVerts=None, eps=None):
