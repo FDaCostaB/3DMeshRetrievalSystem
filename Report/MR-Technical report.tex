@@ -94,11 +94,11 @@ In "render.py", there is a function called "render". This function loads the mes
 \end{figure}
 
 \section{Shape analysis}
-To avoid too many disparities between several meshes in the database, we wanted to normalize some features of the database we implemented a function to retrieve generic information from a mesh. Towards the idea of normalizing the number of vertices, the position, the scale, the alignment, and the orientation. We have implemented a filter to retrieve the number of vertices, barycenter, the size of the bounding box, the vector given by principal component analysis, and the second-order moment of mass.
-	
-	We have to determine an order for all the different steps as a transformation can have an impact on the following one. Mainly any transformation T has to be performed before T' if T have a side effect on the property that T' normalize. First of all, we begin with the numbers of vertices to obtain a uniform description of the shape of the poorly sampled mesh. This makes some computation easier as we can assume that each vertex describes the same amount of mass. In the first place, we normalize the position as it does not impact any other properties. We remark that any rotation impacts the size of the bounding box and the flipping so we compute alignment with the axis given by PCA in second place and the flipping in third place as both are a matter of rotation. In the fourth place, we scale the mesh to the unit cube as it will not influence any of the previous properties (namely the position, scaling, or alignment with the most spread axis given by PCA). The flipping operation or scaling operation don't influence each other so we could have computed the last two transformations in a different order.
-	
-We will go into further detail, analyzing the descriptors for each feature now.
+To avoid too many disparities between the properties of 3D objects in the database, we wanted to normalize some features to extract them easier in the following step. So, we implemented some functions to extract generic information and normalize them from all 3D objects of the database. These features are the number of vertices, the position, the scale, the alignment, the orientation, the location of the barycenter, the size of the bounding box, the vector given by principal component analysis, and the second-order moment of mass.
+
+Also, we had to determine an order for all the different extracting and normalizing steps, as some of them can have an impact on the following one. In general, any transformation T has to be performed before T' if T has a side effect on the properties that T'  has to normalize. First of all, we began with the numbers of vertices and how they were sampled to obtain a uniform mesh from the poorly sampled ones. Because this action optimizes some computations that are dependent on the number or position of the vertices. Second, we normalized the positions of 3D objects as it does not impact other properties. As any rotation impacts the orientation of the bounding box, we applied alignment with the axis given by PCA in the next step. Then, we did the flipping in fourth place. In the end, we scaled the 3D objects to the unit cube.
+
+We discuss further details for each feature in the following.
 
 
 \subsection{Vertex numbers}
