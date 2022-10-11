@@ -132,7 +132,7 @@ As we can see after normalization (see Fig.\ref{fig:barycenter-after}),  all the
 
 \subsection{Rotation}
 
-	We use a PyMeshLab in-built function to compute the eigenvector of the 3D mesh. The function computes the eigenvector of the covariance matrix and aligns the shape with them. We could implement this by computing the covariance matrix and extracting the eigenvector from it but the library used is reliable and it saves some testing and debugging efforts. The covariance matrix is computed with the following formula :
+	We used a PyMeshLab built-in function to compute the eigenvector of the 3D mesh and align the shape with that vector. The function computes the eigenvector from the co-variance matrix which can be described  with the following formula :
 	$$ C = \begin{pmatrix}
    \sigma(x,x) & \sigma(x,y) & \sigma(x,z) \\
    \sigma(y,x) & \sigma(y,y) & \sigma(y,z) \\
@@ -141,9 +141,9 @@ As we can see after normalization (see Fig.\ref{fig:barycenter-after}),  all the
 
 where $ \sigma(x,y) = \frac{1}{n-1} \sum\limits_{i=1}^n ( x_i - \bar{x} ) $ the co-variance of x with respect to y
 	
-	To  implement the rotation we could just compute the coordinate $(\overrightarrow{OV}.E_x, \overrightarrow{OV}.E_y, \overrightarrow{OV}.E_z)$ (with O the origin and V the vertex for which we compute the new coordinate) i.e the projection of the vertex on the eigenvector corresponding to a new axis is the new coordinate on this axis.
+	To implement the rotation we could just compute the coordinate $(\overrightarrow{OV}.E_x, \overrightarrow{OV}.E_y, \overrightarrow{OV}.E_z)$ (where O is the origin and V is the vertex that we transfer to the new coordinate)
 	
-	We can observe the effect of the normalization of the rotation (see Figure \ref{fig:PCA-after}.
+	The effect of rotation normalization can be found in  (see Figure \ref{fig:PCA-after}.
 
 \begin{figure}[h!]
 \begin{center}
@@ -161,7 +161,7 @@ where $ \sigma(x,y) = \frac{1}{n-1} \sum\limits_{i=1}^n ( x_i - \bar{x} ) $ the 
   \end{center}
 \end{figure}
 	
-	We see that the axis where the vertex are the most spread is aligned with the x-axis after normalization. It means that after normalization the main eigenvector given by the PCA looks like (1,0,0) therefore the mesh is oriented as expected.
+	It can be seen that after normalization the axis where the vertices are the most spread is aligned with the x-axis. It means that after normalization the main eigenvector given by the PCA looks like (1,0,0), therefore the 3D object is oriented as we expected.
 	
 \subsection{Orientation}
 	We now need to normalize the orientation. Determine if flipping along an axis is needed based on the moment test. We compute the second-order moment of the area with respect to a given axis, if it is negative we rotate the mesh of 180° around this axis to inverse the momentum.
