@@ -132,7 +132,7 @@ As we can see after normalization (see Fig.\ref{fig:barycenter-after}),  all the
 
 \subsection{Rotation}
 
-	We use a PyMeshLab in-built function to compute the eigenvector of the 3D mesh. The function computes the eigenvector of the covariance matrix and aligns the shape with them. We could implement this by computing the covariance matrix and extracting the eigenvector from it but the library used is reliable and it saves some testing and debugging efforts. The covariance matrix is computed with the following formula :
+	We used a PyMeshLab built-in function to compute the eigenvector of the 3D mesh and align the shape with that vector. The function computes the eigenvector from the co-variance matrix which can be described  with the following formula :
 	$$ C = \begin{pmatrix}
    \sigma(x,x) & \sigma(x,y) & \sigma(x,z) \\
    \sigma(y,x) & \sigma(y,y) & \sigma(y,z) \\
@@ -141,9 +141,9 @@ As we can see after normalization (see Fig.\ref{fig:barycenter-after}),  all the
 
 where $ \sigma(x,y) = \frac{1}{n-1} \sum\limits_{i=1}^n ( x_i - \bar{x} ) $ the co-variance of x with respect to y
 	
-	To  implement the rotation we could just compute the coordinate $(\overrightarrow{OV}.E_x, \overrightarrow{OV}.E_y, \overrightarrow{OV}.E_z)$ (with O the origin and V the vertex for which we compute the new coordinate) i.e the projection of the vertex on the eigenvector corresponding to a new axis is the new coordinate on this axis.
+	To implement the rotation we could just compute the coordinate $(\overrightarrow{OV}.E_x, \overrightarrow{OV}.E_y, \overrightarrow{OV}.E_z)$ (where O is the origin and V is the vertex that we transfer to the new coordinate)
 	
-	We can observe the effect of the normalization of the rotation (see Figure \ref{fig:PCA-after}.
+	The effect of rotation normalization can be found in  (see Figure \ref{fig:PCA-after}.
 
 \begin{figure}[h!]
 \begin{center}
@@ -161,7 +161,7 @@ where $ \sigma(x,y) = \frac{1}{n-1} \sum\limits_{i=1}^n ( x_i - \bar{x} ) $ the 
   \end{center}
 \end{figure}
 	
-	We see that the axis where the vertex are the most spread is aligned with the x-axis after normalization. It means that after normalization the main eigenvector given by the PCA looks like (1,0,0) therefore the mesh is oriented as expected.
+	It can be seen that after normalization the axis where the vertices are the most spread is aligned with the x-axis. It means that after normalization the main eigenvector given by the PCA looks like (1,0,0), therefore the 3D object is oriented as we expected.
 	
 \subsection{Orientation}
 	We now need to normalize the orientation. Determine if flipping along an axis is needed based on the moment test. We compute the second-order moment of the area with respect to a given axis, if it is negative we rotate the mesh of 180° around this axis to inverse the momentum.
@@ -170,12 +170,12 @@ where $ \sigma(x,y) = \frac{1}{n-1} \sum\limits_{i=1}^n ( x_i - \bar{x} ) $ the 
 	
 
 \subsection{Scaling}
-	The objective here is to scale the mesh to fit in the unit cube of the 3D space. As we want all axis to be scaled with the coefficient it means that the longest side of the bounding box has to be one and the other might be lower or equal (in the case of a cube bounding box).
-	We compute two points that will describe the bounding box as follows:
-	$$min\_box = (\underset{v \in V}{min}(v_x),\underset{v \in V}{min}(v_y),\underset{v \in V}{min}(v_z)) $$ and $$max\_box = (\underset{v \in V}{max}(v_x), \underset{v \in V}{max}(v_y), \underset{v \in V}{max}(v_z)$$ with V the set of vertex of the mesh.
-	We define the length of the bounding box as following, and for the rest of the report :
-	$$ |Bounding\_box| = max(\underset{v \in V}{max\_box_i}) - \underset{v \in V}{max\_box_i}))$$ (with i the i-th coordinate of v ($i \in \{x,y,z\}$)and V the set of vertex of the mesh.)
-	The definition match what we can call the longest side of the bounding box. The normalize this length to one we multiply each vertex by the inverse of the longest side of the bounding box to scale the side to one. We can observe the effect of the transformation in Figure \ref{fig:box-size-after}.
+	The objective is to scale 3D objects to fit in a unit cube. As we wanted all axis to be scaled with a coefficient, we considered that the longest side of the bounding box has to be one, so other sides might be lower or equal to one.
+We compute two points that will describe the bounding box as follows:
+$$min\_box = (\underset{v \in V}{min}(v_x),\underset{v \in V}{min}(v_y),\underset{v \in V}{min}(v_z)) $$ and $$max\_box = (\underset{v \in V}{max}(v_x), \underset{v \in V}{max}(v_y), \underset{v \in V}{max}(v_z)$$ with V the set of vertex of the mesh.
+We define the length of the bounding box as following:
+$$ |Bounding\_box| = max(\underset{v \in V}{max\_box_i}) - \underset{v \in V}{max\_box_i}))$$ (with i the i-th coordinate of v ($i \in \{x,y,z\}$)and V the set of vertices of a mesh.)
+The effect of this scale normalization can be seen in Figure \ref{fig:box-size-after}.
 
 \begin{figure}[h!]
 \begin{center}
@@ -193,8 +193,7 @@ where $ \sigma(x,y) = \frac{1}{n-1} \sum\limits_{i=1}^n ( x_i - \bar{x} ) $ the 
   \end{center}
 \end{figure}
 
-In comparison, with the initial Database (see Figure \ref{fig:box-size-before}) we can deduce that the size of the bounding box has been normalizing around one. After an analysis, we have seen that every mesh has the size of its bounding box in $1\pm 1^{-6}$ which might be caused by the imprecision of python computing the inverse of the initial size of the bounding box.
-
+In comparison with the initial database (see Figure \ref{fig:box-size-before}), we can deduce that the size of the bounding boxes has been normalized around one.
 %\section*{Acknowledgements}
 %Anyone to thank/credit for helping your team along the way? This is the place to do it.
 \medskip
