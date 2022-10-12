@@ -3,11 +3,11 @@ import DBData as db
 from Mesh import Mesh
 
 if len(sys.argv) == 1:
-    # db.normalise(5000, 200)
-    # db.plot('Models')
-    db.plot('output')
+    # db.normalise()
+    db.plot('remesh')
+    # db.plot('output')
 elif len(sys.argv) == 2:
-    db.normCategory(sys.argv[1], 5000, 200)
+    db.normCategory(sys.argv[1])
     db.viewCategory(sys.argv[1], 'diagonal', False)
     # ms = Mesh(sys.argv[1])
     # ms.render()

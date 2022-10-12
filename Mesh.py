@@ -6,18 +6,22 @@ import polyscope as ps
 import numpy as np
 import Math
 from dataName import dataName
-from Log import debugLvl, debugLog
+from DebugLog import debugLvl, debugLog
 import polyscopeUI as psUI
 
 
 class Mesh:
     def __init__(self, meshPath):
-        self.meshPath = meshPath
-        self.ms = pymeshlab.MeshSet()
-        self.ms.load_new_mesh(meshPath)
-        self.mesh = self.ms.current_mesh()
-        self.expectedVerts = 10000
-        self.eps = 1000
+        fileType = os.path.splitext(os.path.realpath(meshPath))[1]
+        if fileType == ".obj" or fileType == ".off" or fileType == ".ply":
+            self.meshPath = meshPath
+            self.ms = pymeshlab.MeshSet()
+            self.ms.load_new_mesh(meshPath)
+            self.mesh = self.ms.current_mesh()
+            self.expectedVerts = 5000
+            self.eps = 100
+        else:
+            raise Exception("Format not accepted")
 
     # ---------------------------------------------------------------------------------------------- #
     # --------------------------------- Normalisation computations --------------------------------- #
@@ -25,16 +29,14 @@ class Mesh:
     def dataFilter(self):
         p1 = Path(self.meshPath)
         category = os.path.relpath(p1.parent, p1.parent.parent)
-        fileType = os.path.splitext(os.path.realpath(self.meshPath))[1]
-        if fileType == ".obj" or fileType == ".off" :
-            for face in self.mesh.polygonal_face_list():
-                if len(face)==4 : raise Exception("Quads found")
-            out_dict = self.ms.get_geometric_measures()
-            size = [ self.mesh.bounding_box().dim_x(), self.mesh.bounding_box().dim_y(), self.mesh.bounding_box().dim_z()]
-            res = {dataName.CATEGORY.value : category, dataName.FACE_NUMBERS.value : self.mesh.face_number(), dataName.VERTEX_NUMBERS.value : self.mesh.vertex_number(),
-                   dataName.SIDE_SIZE.value : max(size), dataName.MOMENT.value : self.momentOrder(), dataName.SIZE.value : size, dataName.BARYCENTER.value : out_dict['barycenter'],
-                   dataName.DIST_BARYCENTER.value : Math.length(out_dict['barycenter']),dataName.PCA.value :list(out_dict['pca']), dataName.DIAGONAL.value : self.mesh.bounding_box().diagonal()}
-            return res
+        for face in self.mesh.polygonal_face_list():
+            if len(face)==4 : raise Exception("Quads found")
+        out_dict = self.ms.get_geometric_measures()
+        size = [ self.mesh.bounding_box().dim_x(), self.mesh.bounding_box().dim_y(), self.mesh.bounding_box().dim_z()]
+        res = {dataName.CATEGORY.value : category, dataName.FACE_NUMBERS.value : self.mesh.face_number(), dataName.VERTEX_NUMBERS.value : self.mesh.vertex_number(),
+               dataName.SIDE_SIZE.value : max(size), dataName.MOMENT.value : self.momentOrder(), dataName.SIZE.value : size, dataName.BARYCENTER.value : out_dict['barycenter'],
+               dataName.DIST_BARYCENTER.value : Math.length(out_dict['barycenter']),dataName.PCA.value :list(out_dict['pca']), dataName.DIAGONAL.value : self.mesh.bounding_box().diagonal()}
+        return res
 
     def refine(self, expectedVerts=None, eps=None):
         LIMIT = 5
@@ -122,7 +124,7 @@ class Mesh:
         self.ms.add_mesh(transformedMesh)
         self.mesh = self.ms.current_mesh()
 
-    def normalise(self):
+    def normalise(self, showComparison=False):
         stats = self.dataFilter()
 
         self.ms.compute_matrix_from_translation(traslmethod='XYZ translation', axisx=-1 * stats[dataName.BARYCENTER.value][0],
@@ -131,10 +133,11 @@ class Mesh:
         self.principalAxisAlignement()
         self.flipMomentTest()
         stats = self.dataFilter()
-        if stats[dataName.DIST_BARYCENTER.value]>0.1:
-            debugLog( os.path.realpath(self.meshPath) + ' : Distance of barycenter from origin :' + str(stats[dataName.DIST_BARYCENTER.value]), debugLvl.INFO)
         self.ms.compute_matrix_from_scaling_or_normalization(axisx=1/stats[dataName.SIDE_SIZE.value],customcenter=stats[dataName.BARYCENTER.value], uniformflag=True)
 
+        if showComparison:
+            self.printProperties()
+            self.compare()
 
     def resample(self, expectedVerts=10000, eps=1000, showComparison=False):
         if showComparison:
@@ -291,7 +294,7 @@ class Mesh:
 
     def saveMesh(self):
         # Same path with output instead of Model
-        newPath = os.path.join('./output',os.path.relpath(self.meshPath,'./Models'))
+        newPath = os.path.join('./output',os.path.relpath(self.meshPath,'./remesh'))
 
         #Create parent dir if it doesn't exist
         os.makedirs(os.path.dirname(newPath), exist_ok=True)

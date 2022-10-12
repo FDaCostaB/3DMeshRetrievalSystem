@@ -2,11 +2,13 @@ from enum import Enum
 from datetime import datetime
 import os
 
+
 class debugLvl(Enum):
     DEBUG = 0
     INFO = 1
     WARNING = 2
     ERROR = 3
+
 
 def debugLog(text,debugLvl):
     now = datetime.now()
