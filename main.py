@@ -5,10 +5,10 @@ from Mesh import Mesh
 if len(sys.argv) == 1:
     # db.normalise()
     db.plot('remesh')
-    # db.plot('output')
+    db.plot('output')
 elif len(sys.argv) == 2:
-    db.normCategory(sys.argv[1])
-    db.viewCategory(sys.argv[1], 'diagonal', False)
+    # db.normCategory(sys.argv[1])
+    db.viewCategory(sys.argv[1], 'diagonal', True)
     # ms = Mesh(sys.argv[1])
     # ms.render()
     # ms.silhouetteExport()
