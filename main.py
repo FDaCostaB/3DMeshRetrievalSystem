@@ -1,15 +1,15 @@
 import sys
-from FileIO import normaliseDB, plotDB, viewCategory,normCategory
+import DBData as db
 from Mesh import Mesh
 
 if len(sys.argv) == 1:
-    normaliseDB(5000, 200)
-    plotDB('Models')
-    plotDB('output')
+    db.normalise(5000, 200)
+    db.plot('Models')
+    db.plot('output')
 elif len(sys.argv) == 2:
-    normCategory(sys.argv[1], 5000, 200)
-    viewCategory(sys.argv[1], 'diagonal', True)
-    # ms = Mesh(sys.argv[1])
+    # io.normCategory(sys.argv[1], 5000, 200)
+    # io.viewCategory(sys.argv[1], 'diagonal', True)
+    ms = Mesh(sys.argv[1])
     # ms.render()
     # ms.silhouetteExport()
-    # ms.resample(10000, 1000, True)
+    ms.resample(5000, 1000, True)

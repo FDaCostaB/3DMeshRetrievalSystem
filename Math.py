@@ -1,4 +1,6 @@
 import numpy as np
+
+
 def dist(a, b):
     x = 0
     y = 1
@@ -36,7 +38,8 @@ def angle(a, b):
 
 
 def tetrahedronVolume(a, b, c):
-    return dotProduct(crossProduct(a,b),c)/6
+    return dotProduct(crossProduct(a, b), c)/6
+
 
 def vect(a, b):
     return [b[0]-a[0], b[1]-a[1], b[2]-a[2]]

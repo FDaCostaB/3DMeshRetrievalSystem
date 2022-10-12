@@ -1,20 +1,21 @@
 import csv
 import os
+import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
+from parse import getFieldList, getIndexList
 from Mesh import Mesh
 from dataName import dataName, dataDimension
-import matplotlib.pyplot as plt
-from matplotlib import image as mpimg
-from Debug import debugLvl, debugLog
-import matplotlib.image as mpimg
+from Log import debugLvl, debugLog
 
-class DataIO:
+
+class DBData:
     def __init__(self,outputDir):
         self.pctPath = "./"+outputDir+"/PRINCETON/test"
         self.lblPath = "./"+outputDir+"/LabeledDB_new"
         self.outputDir = outputDir
         self.dictList = []
 
-    def exportMeshesData(self):
+    def exportData(self):
         meshesData1 = []
         for dir in os.scandir(self.lblPath):
             FileIt =os.scandir(os.path.join(self.lblPath, dir.name))
@@ -29,7 +30,7 @@ class DataIO:
                         debugLog(os.path.realpath(file),debugLvl.WARNING)
                         debugLog(str(mainComponentPCA),debugLvl.WARNING)
             FileIt.close()
-        self.writeData('dataLabeledDB.csv',meshesData1)
+        self.csvExport('dataLabeledDB.csv', meshesData1)
 
         meshesData2 = []
         for dir in os.scandir(self.pctPath):
@@ -41,10 +42,10 @@ class DataIO:
                     data = mesh.dataFilter()
                     if data is not None : meshesData2.append(data)
             FileIt.close()
-        self.writeData('dataPriceton.csv',meshesData2)
+        self.csvExport('dataPriceton.csv', meshesData2)
         self.dictList = meshesData1 + meshesData2
 
-    def writeData(self,fileName,data):
+    def csvExport(self, fileName, data):
         filePath = os.path.join(os.path.realpath("./"+self.outputDir),fileName)
         os.makedirs(os.path.dirname(filePath), exist_ok=True)
         file = open(filePath, "w")
@@ -52,11 +53,11 @@ class DataIO:
         csvDictWriter.writeheader()
         csvDictWriter.writerows(data)
 
-    def plotFeatures(self, featuresList, n_bins=20, size_x=10, size_y=7):
+    def plot(self, featuresList, n_bins=20, size_x=10, size_y=7):
         for feature in featuresList:
             dataVisualisation(getFieldList(feature, self.dictList), feature, self.outputDir, n_bins, size_x, size_y)
 
-    def plot3DFeatures(self, featuresList):
+    def plot3D(self, featuresList):
         for feature in featuresList:
             if dataName.PCA.value == feature:
                 mainComponentPCA = getIndexList(0, getFieldList(feature, self.dictList))
@@ -64,17 +65,17 @@ class DataIO:
             else :
                 XYZdataVisualisation(getFieldList(feature, self.dictList), feature, self.outputDir)
 
-    def plotHistograms(self,features):
-        self.exportMeshesData()
+    def histograms(self, features):
+        self.exportData()
         if dataName.CATEGORY in features :
-            self.plotFeatures([dataName.CATEGORY.value], 26, 25, 10)
+            self.plot([dataName.CATEGORY.value], 26, 25, 10)
         OneD = [f.value for f in features if dataDimension[f] == 1 and f != dataName.CATEGORY]
         ThreeD = [f.value for f in features if dataDimension[f] == 3]
-        self.plot3DFeatures(ThreeD)
-        self.plotFeatures(OneD)
+        self.plot3D(ThreeD)
+        self.plot(OneD)
 
 
-def normaliseDB(expectedVerts,eps):
+def normalise(expectedVerts, eps):
     totalMesh = 0
     for dir in os.scandir("./Models/PRINCETON/test"):
         FileIt = os.scandir(os.path.join("./Models/PRINCETON/test", dir.name))
@@ -171,18 +172,6 @@ def viewCategory(path, camPos="diagonal", debug=False):
         plt.show()
 
 
-# From a List of dictionnary retrieve a list of the element with key field of each dictionnary
-def getFieldList(field,dictList):
-    return [dict[field] for dict in dictList]
-
-
-# From a List of List (listList) retrieve a list of the i-th element of each List
-def getIndexList(i,listList, doAbs=False):
-    if doAbs:
-        return [abs(list[i]) for list in listList]
-    else :
-        return [list[i] for list in listList]
-
-def plotDB(folder):
-    dataIO = DataIO(folder)
-    dataIO.plotHistograms([dataName.CATEGORY, dataName.FACE_NUMBERS, dataName.VERTEX_NUMBERS, dataName.SIDE_SIZE, dataName.DIST_BARYCENTER, dataName.PCA])
+def plot(folder):
+    dataIO = DBData(folder)
+    dataIO.histograms([dataName.CATEGORY, dataName.FACE_NUMBERS, dataName.VERTEX_NUMBERS, dataName.SIDE_SIZE, dataName.DIST_BARYCENTER, dataName.PCA])

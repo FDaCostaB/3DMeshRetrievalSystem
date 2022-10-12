@@ -1,12 +1,14 @@
+import random
 import os.path
+from pathlib import Path
 import pymeshlab
-import Math
 import polyscope as ps
 import numpy as np
-from pathlib import Path
+import Math
 from dataName import dataName
-from Debug import debugLvl, debugLog
-import random
+from Log import debugLvl, debugLog
+import polyscopeUI as psUI
+
 
 class Mesh:
     def __init__(self, meshPath):
@@ -17,6 +19,9 @@ class Mesh:
         self.expectedVerts = 10000
         self.eps = 1000
 
+    # ---------------------------------------------------------------------------------------------- #
+    # --------------------------------- Normalisation computations --------------------------------- #
+    # ---------------------------------------------------------------------------------------------- #
     def dataFilter(self):
         p1 = Path(self.meshPath)
         category = os.path.relpath(p1.parent, p1.parent.parent)
@@ -62,7 +67,7 @@ class Mesh:
 
         # Laplacian smooth to get a more uniformly distributed point cloud over the mesh
         try:
-            self.ms.apply_filter('apply_coord_laplacian_smoothing', stepsmoothnum=3)
+            self.ms.apply_filter('apply_coord_laplacian_smoothing', stepsmoothnum=5)
         except:
             debugLog(os.path.realpath(self.meshPath) + " - ERROR : Failed to apply filter:  'apply_coord_laplacian_smoothing.",debugLvl.ERROR)
         if newStats[dataName.VERTEX_NUMBERS.value] < self.expectedVerts - self.eps or newStats[
@@ -117,22 +122,17 @@ class Mesh:
         self.ms.add_mesh(transformedMesh)
         self.mesh = self.ms.current_mesh()
 
-    def normalise(self, showDebug=False):
+    def normalise(self):
         stats = self.dataFilter()
-        if (showDebug):
-            self.printProperties()
 
         self.ms.compute_matrix_from_translation(traslmethod='XYZ translation', axisx=-1 * stats[dataName.BARYCENTER.value][0],
                                            axisy=-1 * stats[dataName.BARYCENTER.value][1],
                                            axisz=-1 * stats[dataName.BARYCENTER.value][2])
-        self.principalAxisAlignement(showDebug)
-        self.flipMomentTest(showDebug)
+        self.principalAxisAlignement()
+        self.flipMomentTest()
         stats = self.dataFilter()
         self.ms.compute_matrix_from_scaling_or_normalization(axisx=1/stats[dataName.SIDE_SIZE.value],scalecenter='barycenter', uniformflag=True)
 
-        if (showDebug):
-            self.printProperties()
-            self.compare()
 
     def resample(self, expectedVerts=10000, eps=1000, showComparison=False):
         if showComparison:
@@ -150,18 +150,9 @@ class Mesh:
             self.printProperties()
             self.compare()
 
-    def compare(self):
-        setPolyscopeSetting(1280, 720)
-        if len(self.ms) == 1 :
-            self.ms.load_new_mesh(self.meshPath)
-            self.ms.set_current_mesh(0)
-        ps.init()
-        ps.register_point_cloud("Before cloud points", self.ms.mesh(len(self.ms)-1).vertex_matrix())
-        ps.register_surface_mesh("Before Mesh", self.ms.mesh(len(self.ms)-1).vertex_matrix(), self.ms.mesh(len(self.ms)-1).face_matrix())
-        ps.register_point_cloud("After cloud points", self.ms.mesh(len(self.ms)-2).vertex_matrix())
-        ps.register_surface_mesh("After Mesh", self.ms.mesh(len(self.ms)-2).vertex_matrix(), self.ms.mesh(len(self.ms)-2).face_matrix())
-        ps.show()
-
+    # ---------------------------------------------------------------------------------------------- #
+    # ------------------------------------ Features computation ------------------------------------ #
+    # ---------------------------------------------------------------------------------------------- #
     def A3(self, sampleNum=10000):
         vertices = self.ms.mesh(0).vertex_matrix()
         res = []
@@ -272,13 +263,29 @@ class Mesh:
                 sumZ += vertexMat[vertInd][2]
                 total += 1
         return [sumX/total, sumY/total, sumZ/total]
-    # ----- I/O features -----
 
+    # ---------------------------------------------------------------------------------------------- #
+    # ---------------------------------------- I/O features ---------------------------------------- #
+    # ---------------------------------------------------------------------------------------------- #
     def printProperties(self):
         stats = self.dataFilter()
         debugLog(
             os.path.realpath(self.meshPath) + ' : Size :' + str(stats[dataName.SIDE_SIZE.value]) + ', Shell Barycenter : ' + str(stats[dataName.BARYCENTER.value]) + ', Moment order' +
             str(np.sign(stats[dataName.MOMENT.value])) +'\nPCA :\n'+ str(stats[dataName.PCA.value]),debugLvl.DEBUG)
+
+
+    def compare(self):
+        psUI.setPolyscopeSetting(1280, 720)
+        if len(self.ms) == 1 :
+            self.ms.load_new_mesh(self.meshPath)
+            self.ms.set_current_mesh(0)
+        ps.init()
+        ps.register_point_cloud("Before cloud points", self.ms.mesh(len(self.ms)-1).vertex_matrix())
+        ps.register_surface_mesh("Before Mesh", self.ms.mesh(len(self.ms)-1).vertex_matrix(), self.ms.mesh(len(self.ms)-1).face_matrix())
+        ps.register_point_cloud("After cloud points", self.ms.mesh(len(self.ms)-2).vertex_matrix())
+        ps.register_surface_mesh("After Mesh", self.ms.mesh(len(self.ms)-2).vertex_matrix(), self.ms.mesh(len(self.ms)-2).face_matrix())
+        ps.show()
+
 
     def saveMesh(self):
         # Same path with output instead of Model
@@ -291,7 +298,7 @@ class Mesh:
         self.ms.save_current_mesh(os.path.splitext(newPath)[0]+".off")
 
     def render(self):
-        setPolyscopeSetting(1280, 720)
+        psUI.setPolyscopeSetting(1280, 720)
         ps.init()
         ps_cloud = ps.register_point_cloud("my points", self.ms.mesh(0).vertex_matrix())
         ps_cloud.set_radius(0.002)
@@ -316,7 +323,7 @@ class Mesh:
     def screenshot(self,saveTo, camLocation="diagonal"):
         os.makedirs('./screenshot', exist_ok=True)
         fileName = os.path.splitext(os.path.basename(self.meshPath))[0]
-        setPolyscopeSetting(450, 450)
+        psUI.setPolyscopeSetting(450, 450)
         ps.init()
         ps.set_ground_plane_mode("none")
         ps.register_surface_mesh("my mesh", self.ms.mesh(0).vertex_matrix(), self.ms.mesh(0).face_matrix(), material='clay',color=[0,0,1])
@@ -329,8 +336,3 @@ class Mesh:
             ps.set_view_projection_mode('orthographic')
             ps.look_at((0., -0.5 , 0.), (0., 0., 0.))
         ps.screenshot(saveTo+'/'+fileName+'.jpg', False)
-
-def setPolyscopeSetting(windowWidth, windowHeight, windowPosX=100, windowPosY=100):
-    f = open(".polyscope.ini", "w")
-    f.write("{\n\"windowHeight\": "+str(windowHeight)+",\n\"windowPosX\": "+str(windowPosX)+",\n\"windowPosY\": "+str(windowPosY)+",\n\"windowWidth\": "+str(windowWidth)+"\n}")
-    f.close()
