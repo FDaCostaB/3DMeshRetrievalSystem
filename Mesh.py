@@ -32,8 +32,8 @@ class Mesh:
             out_dict = self.ms.get_geometric_measures()
             size = [ self.mesh.bounding_box().dim_x(), self.mesh.bounding_box().dim_y(), self.mesh.bounding_box().dim_z()]
             res = {dataName.CATEGORY.value : category, dataName.FACE_NUMBERS.value : self.mesh.face_number(), dataName.VERTEX_NUMBERS.value : self.mesh.vertex_number(),
-                   dataName.SIDE_SIZE.value : max(size), dataName.MOMENT.value : self.momentOrder(), dataName.SIZE.value : size, dataName.BARYCENTER.value : list(out_dict['shell_barycenter']),
-                   dataName.DIST_BARYCENTER.value : Math.length(list(out_dict['shell_barycenter'])),dataName.PCA.value :list(out_dict['pca']), dataName.DIAGONAL.value : self.mesh.bounding_box().diagonal()}
+                   dataName.SIDE_SIZE.value : max(size), dataName.MOMENT.value : self.momentOrder(), dataName.SIZE.value : size, dataName.BARYCENTER.value : out_dict['barycenter'],
+                   dataName.DIST_BARYCENTER.value : Math.length(out_dict['barycenter']),dataName.PCA.value :list(out_dict['pca']), dataName.DIAGONAL.value : self.mesh.bounding_box().diagonal()}
             return res
 
     def refine(self, expectedVerts=None, eps=None):
@@ -131,7 +131,9 @@ class Mesh:
         self.principalAxisAlignement()
         self.flipMomentTest()
         stats = self.dataFilter()
-        self.ms.compute_matrix_from_scaling_or_normalization(axisx=1/stats[dataName.SIDE_SIZE.value],scalecenter='barycenter', uniformflag=True)
+        if stats[dataName.DIST_BARYCENTER.value]>0.1:
+            debugLog( os.path.realpath(self.meshPath) + ' : Distance of barycenter from origin :' + str(stats[dataName.DIST_BARYCENTER.value]), debugLvl.INFO)
+        self.ms.compute_matrix_from_scaling_or_normalization(axisx=1/stats[dataName.SIDE_SIZE.value],customcenter=stats[dataName.BARYCENTER.value], uniformflag=True)
 
 
     def resample(self, expectedVerts=10000, eps=1000, showComparison=False):
@@ -253,9 +255,9 @@ class Mesh:
         return components, barycenter_cloud
 
     def barycenter(self, faceList):
-        sumX=0; sumY=0; sumZ=0; total=0;
-        vertexMat = self.ms.mesh(0).vertex_matrix()
-        faceMat = self.ms.mesh(0).face_matrix()
+        sumX=0; sumY=0; sumZ=0; total=0
+        vertexMat = self.mesh.vertex_matrix()
+        faceMat = self.mesh.face_matrix()
         for faceInd in faceList:
             for vertInd in faceMat[faceInd]:
                 sumX += vertexMat[vertInd][0]

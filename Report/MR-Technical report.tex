@@ -10,6 +10,8 @@
 \usepackage[color]{showkeys}
 \usepackage{etoolbox}
 \usepackage{graphicx,tabularx}
+\usepackage{caption}
+\usepackage{subcaption}
 \usepackage{amsfonts} 
 %% Sets page size and margins
 \usepackage[a4paper,top=3cm,bottom=2cm,left=3cm,right=3cm,marginparwidth=1.75cm]{geometry}
@@ -94,9 +96,9 @@ In "render.py", there is a function called "render". This function loads the mes
 \end{figure}
 
 \section{Shape analysis}
-To avoid too many disparities between the properties of 3D objects in the database, we wanted to normalize some features to extract them easier in the following step. So, we implemented some functions to extract generic information and normalize them from all 3D objects of the database. These features are the number of vertices, the position, the scale, the alignment, the orientation, the location of the barycenter, the size of the bounding box, the vector given by principal component analysis, and the second-order moment of mass.
+To avoid too many disparities between the properties of 3D objects in the database, we wanted to normalize some features to extract them with ease in the following step. So, we implemented some functions to extract generic information and normalize them from all 3D objects of the database. These features are the number of vertices, the position, the scale, the alignment, the orientation, the location of the barycenter, and the size of the bounding box.
 
-Also, we had to determine an order for all the different extracting and normalizing steps, as some of them can have an impact on the following one. In general, any transformation T has to be performed before T' if T has a side effect on the properties that T'  has to normalize. First of all, we began with the numbers of vertices and how they were sampled to obtain a uniform mesh from the poorly sampled ones. Because this action optimizes some computations that are dependent on the number or position of the vertices. Second, we normalized the positions of 3D objects as it does not impact other properties. As any rotation impacts the orientation of the bounding box, we applied alignment with the axis given by PCA in the next step. Then, we did the flipping in fourth place. In the end, we scaled the 3D objects to the unit cube.
+Also, we had to determine an order for all the different extracting and normalizing steps, as some of them can have an impact on the following one. In general, any transformation T has to be performed before T' if T has a side effect on the properties that T'  has to normalize. First of all, we began with the numbers of vertices and how they were sampled to obtain a uniform mesh from the poorly sampled ones. This action help computations, that are dependent on the number of vertices, to be computed correctly. Second, we normalized the positions of 3D objects as it does not impact other properties. As any rotation impacts the orientation of the bounding box, we applied to scale after any rotation. Therefore in third place, we rotate the 3D object with the axis given by PCA in the next step. Then, we did the flipping in fourth place. Now, that the 3D object is aligned with its most spread axis the oriented bounding box and the bounding box coincide. It then makes sense to scale to fit in the unit cube in fourth place.
 
 We discuss further details for each feature in the following.
 
@@ -106,7 +108,7 @@ We discuss further details for each feature in the following.
 
 \subsection{Position}
 
-One way of normalizing the position is to translate the barycenter to the origin of the 3D space. As PyMeshLab has a built-in function for translation, we only needed the barycenters of the 3D objects to be calculated. Usually, we had to compute the average position of the center of all faces weighted by the area of that face because the vertices are non-uniformly distributed over the mesh. However, we ensured in section \ref{subsec: vertex numbers} that vertices spread uniformly around the mesh. With this assumption, we can just compute the average x,y, and z of all the vertices of each 3D object. Here is the formula to compute the barycenter ($i \in \{x,y,z\}$) :
+One way of normalizing the position is to translate the barycenter to the origin of the 3D space. As PyMeshLab has a built-in function for translation, we only needed the barycenters of the 3D objects to be calculated. Usually, we had to compute the average position of the center of all faces weighted by the area of that face because the vertices are non-uniformly distributed over the mesh. However, we ensured in section \ref{subsec: vertex numbers} that vertices spread uniformly around the mesh. With this assumption, we can just compute the average x,y, and z of all the vertices of each 3D object. Here is the formula to compute the barycenter :
 
 $$ b_i = \frac{\sum_{v \in V} v_i}{|V|} $$ (with i the i-th coordinate of v ($i \in \{x,y,z\}$)and V the set of vertex of the mesh.)
 
@@ -128,11 +130,11 @@ Once the barycenter was computed we translated each vertex by the $\overrightarr
   \end{center}
 \end{figure}
 
-As we can see after normalization (see Fig.\ref{fig:barycenter-after}),  all the 3D objects have their barycenter at or close to the origin.
+As we can see after normalization (see Fig.\ref{fig:barycenter-after}),  all the 3D objects have their barycenter really close to the origin. All the distance origin-barycenter are lower than $0.0001$.
 
 \subsection{Rotation}
 
-	We used a PyMeshLab built-in function to compute the eigenvector of the 3D mesh and align the shape with that vector. The function computes the eigenvector from the co-variance matrix which can be described  with the following formula :
+	We used a PyMeshLab built-in function to compute the eigenvector of the 3D mesh and used them for alignment later on. The function computes the eigenvector from the co-variance matrix which can be described  with the following formula :
 	$$ C = \begin{pmatrix}
    \sigma(x,x) & \sigma(x,y) & \sigma(x,z) \\
    \sigma(y,x) & \sigma(y,y) & \sigma(y,z) \\
@@ -141,34 +143,37 @@ As we can see after normalization (see Fig.\ref{fig:barycenter-after}),  all the
 
 where $ \sigma(x,y) = \frac{1}{n-1} \sum\limits_{i=1}^n ( x_i - \bar{x} ) $ the co-variance of x with respect to y
 	
-	To implement the rotation we could just compute the coordinate $(\overrightarrow{OV}.E_x, \overrightarrow{OV}.E_y, \overrightarrow{OV}.E_z)$ (where O is the origin and V is the vertex that we transfer to the new coordinate)
+	We implemented the rotation to align the 3D object with the given eigenvectors as follows. The PCA gives us 3 vectors respectively the most spread axis ($\overrightarrow{E_x}$), the second most spread axis orthogonal to the first one ($\overrightarrow{E_y}$), and the normal of the two previous one ($\overrightarrow{E_z}$) that form the new coordinate system. The new coordinates of each vertex are just the projection of this vertex on the three vectors of the new coordinate system. To rotate, we compute the coordinate $(\overrightarrow{OV}.\overrightarrow{E_x}, \overrightarrow{OV}.\overrightarrow{E_y}, \overrightarrow{OV}.\overrightarrow{E_z})$ (where O is the origin and V is the vertex that we transfer to the new coordinate). This change of coordinate align the 3D object with the three vectors given by the PCA.
 	
-	The effect of rotation normalization can be found in  (see Figure \ref{fig:PCA-after}.
+	The effect of rotation normalization can be seen at Figure \ref{fig:PCA-alignement}.
 
-\begin{figure}[h!]
-\begin{center}
-  \includegraphics[width=0.5\textwidth]{picture/Initial pca}
-  \caption{Value of the main eigenvector for the initial 3D mesh database}
-  \label{fig:PCA-before}
-  \end{center}
-\end{figure}
-
-\begin{figure}[h!]
-\begin{center}
-  \includegraphics[width=0.5\textwidth]{picture/Normalised pca}
-  \caption{Value of the main eigenvector after normalisation}
-  \label{fig:PCA-after}
-  \end{center}
-\end{figure}
+\begin{figure*}
+\centering
+\begin{subfigure}{.5\textwidth}
+  \centering
+  \includegraphics[width=1\linewidth]{picture/airplane_overview_before}
+  \caption{Before orientation and alignement normalisation}
+  \label{fig:overview_before}
+\end{subfigure}%
+\begin{subfigure}{.5\textwidth}
+  \centering
+  \includegraphics[width=1\linewidth]{picture/airplane_overview_after}
+  \caption{After orientation and alignement normalisation}
+  \label{fig:overview_after}
+\end{subfigure}
+\caption{View of different airplanes}
+\label{fig:PCA-alignement}
+\end{figure*}
 	
-	It can be seen that after normalization the axis where the vertices are the most spread is aligned with the x-axis. It means that after normalization the main eigenvector given by the PCA looks like (1,0,0), therefore the 3D object is oriented as we expected.
+	We can see the orientation of a class of objects before and after the normalisation. All objects are oriented in the same direction. Some objects can be seen as outliers. We analyse that this behavior is mostly caused by some features of the 3D object that result in a different rotation. For example, the size of the wings for airplanes can influence the most spread axis (see Figure \ref{fig:overview_after}). If the wings are longest than the body of the airplane the most sread axis is the plane and conversly. After analysis of the same figure presented (see \ref{fig:PCA-alignement}) for all different categories, we conclude that the orientation is then working correctly.
 	
 \subsection{Orientation}
-	We now need to normalize the orientation. Determine if flipping along an axis is needed based on the moment test. We compute the second-order moment of the area with respect to a given axis, if it is negative we rotate the mesh of 180° around this axis to inverse the momentum.
-	The second-order moment of the area with respect to a given axis is computed with this given formula :
+	We now need to normalize the orientation. Determine if flipping along an axis is needed based on the moment test. We compute the second-order moment of the area with respect to a given axis, if it is negative for a given the axis is flipped. The negative values become positive and vice-versa. This inverse the momentum of the object with respect to that axis.\\
+The second-order moment of the area with respect to a given axis is computed with this given formula :
 	$$ f_i = \sum_{t} sign(c_{t,i})(c_{t,i})^2  $$ (with $c_{t,i}$ the i-th coordinate of center of triangle T ($i \in \{x,y,z\}$)
 	
-
+	Using the same figure (see \ref{fig:PCA-alignement}) we see that it is working. After analysing outliers, we deduct that it is mostly cause by some features of the 3D object that result in different orientation. (see \ref{fig:PCA-alignement}). For example, we can see that the top left plane is upside down. After analysis, this is explain by the position of the barycenter that not balanced regarding to the height of the plane. Therefore according to the vertical axis the part with more momentum is the body that is put upward.
+	
 \subsection{Scaling}
 	The objective is to scale 3D objects to fit in a unit cube. As we wanted all axis to be scaled with a coefficient, we considered that the longest side of the bounding box has to be one, so other sides might be lower or equal to one.
 We compute two points that will describe the bounding box as follows:
@@ -180,7 +185,7 @@ The effect of this scale normalization can be seen in Figure \ref{fig:box-size-a
 \begin{figure}[h!]
 \begin{center}
   \includegraphics[width=0.5\textwidth]{picture/Initial size of biggest bounding box side}
-  \caption{size of biggest bounding box side for the initial 3D mesh database}
+  \caption{Size of biggest bounding box side for the initial 3D mesh database}
   \label{fig:box-size-before}
   \end{center}
 \end{figure}

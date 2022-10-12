@@ -105,15 +105,14 @@ def dataVisualisation(list, feature, outputDir, n_bins=20, size_x=10, size_y=7):
 
     plt.xlabel(feature)
     plt.ylabel("Number of mesh(es)")
-    if(feature == dataName.SIDE_SIZE.value and outputDir=='output') : n_bins = [0.95+i*0.01 for i in range(11)]
+    if(feature == dataName.SIDE_SIZE.value and outputDir=='output') : n_bins = [0.99+i*0.001 for i in range(21)]
+    if(feature == dataName.DIST_BARYCENTER.value and outputDir=='output') : n_bins = [0+i*0.0001 for i in range(11)]
     axs.hist(list, bins=n_bins)
     plt.savefig("./" + outputDir + "/" + feature.lower() + '.png')
 
 
 def XYZdataVisualisation(list, feature, outputDir,size_x=10, size_y=7):
-
     fig, axs = plt.subplots(1,1,figsize=(size_x, size_y), tight_layout=True)
-
     data = [getIndexList(0, list, feature == dataName.PCA.value), getIndexList(1, list, feature == dataName.PCA.value), getIndexList(2, list, feature == dataName.PCA.value)]
     colors = ['blue', 'red', 'yellow']
     labels = ['x', 'y', 'z']
@@ -141,9 +140,12 @@ def normCategory(path, expectedVerts,eps):
     FileIt.close()
 
 
-def viewCategory(path, camPos="diagonal", debug=False):
+def viewCategory(path, camPos="diagonal", absolutePath=False, debug=False):
     totalMesh = 0
-    outPath = os.path.join('./output', os.path.relpath(path, './Models'))
+    if absolutePath :
+        outPath = path
+    else :
+        outPath = os.path.join('./output', os.path.relpath(path, './Models'))
     os.makedirs(os.path.join(os.path.realpath(outPath),'screenshot'), exist_ok=True)
     FileIt = os.scandir(outPath)
     for file in FileIt:
@@ -156,7 +158,7 @@ def viewCategory(path, camPos="diagonal", debug=False):
 
     nbOfLine = (totalMesh//5)
     if totalMesh%5>0 : nbOfLine += 1
-    fig, axs = plt.subplots(nbOfLine, 5, figsize=(20, 20))
+    fig, axs = plt.subplots(nbOfLine, 5, figsize=(30, 30))
     i=0
     FileIt = os.scandir(os.path.join(os.path.realpath(outPath), 'screenshot'))
     for screen in FileIt:
@@ -165,8 +167,9 @@ def viewCategory(path, camPos="diagonal", debug=False):
             image = mpimg.imread(os.path.realpath(screen))
             axs[i//5, i%5].imshow(image)
             axs[i//5, i%5].axis('off')
-            axs[i//5, i%5].set_title(str(screen.name))
+            # axs[i//5, i%5].set_title(str(screen.name))
             i+=1
+    plt.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=0.95, wspace=0, hspace=0.05)
     plt.savefig(outPath + "/meshes_overview.jpg")
     if(debug):
         plt.show()
@@ -174,4 +177,4 @@ def viewCategory(path, camPos="diagonal", debug=False):
 
 def plot(folder):
     dataIO = DBData(folder)
-    dataIO.histograms([dataName.CATEGORY, dataName.FACE_NUMBERS, dataName.VERTEX_NUMBERS, dataName.SIDE_SIZE, dataName.DIST_BARYCENTER, dataName.PCA])
+    dataIO.histograms([dataName.VERTEX_NUMBERS, dataName.SIDE_SIZE, dataName.DIST_BARYCENTER])

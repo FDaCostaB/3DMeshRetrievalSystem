@@ -7,7 +7,7 @@ class dataName(Enum):
     SIDE_SIZE = "Size of biggest bounding box side"
     MOMENT = "Moment order"
     SIZE = "Size"
-    BARYCENTER = "Barycenter"
+    BARYCENTER = "Barycenter of the cloud points"
     DIST_BARYCENTER = "Distance of barycenter from origin"
     PCA = "PCA"
     DIAGONAL = "PymeshLab Diag"
