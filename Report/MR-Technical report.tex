@@ -104,7 +104,23 @@ We discuss further details for each feature in the following.
 
 
 \subsection{Vertex numbers}
+The number of vertices and how they are sampled all over the 3D objects have a significant impact on the process of normalizing, extracting features, and matching. So, we tried different algorithms that Pymeshlab has already implemented from different scientific papers. Some of them worked fine with one database and some worked better with the other. But, finally, we used the "generate_resampled_uniform_mesh" function, with the cell size of 1.25 ( Each cell for sampling vertices has a size equal to 1.25 presents of the whole bounding box) to normalize the number of vertices of all the 3D object around 5 thousand vertices. Also, as it can be declared from the name of this method, the vertices of the results are uniformly spread around the meshes.
 \label{subsec:vertex numbers}
+\begin{figure}[h!]
+\begin{center}
+  \includegraphics[width=0.5\textwidth]{picture/Labled_afterRemesh}
+  \caption{Number of vertices of Labled database after normalization}
+  \label{fig:labledDb-vertices}
+  \end{center}
+\end{figure}
+
+\begin{figure}[h!]
+\begin{center}
+  \includegraphics[width=0.5\textwidth]{picture/Princeton_afterRemesh}
+  \caption{Number of vertices of Princeton database after normalization}
+  \label{fig:princeton-vertices}
+  \end{center}
+\end{figure}
 
 \subsection{Position}
 
