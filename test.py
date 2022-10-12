@@ -2,13 +2,13 @@ import pandas as pd
 import os
 import matplotlib.pyplot as plt
 
-OutPath = r"D:\My Projects\UU\Remeshed"
-remeshedDf = pd.read_csv(os.path.join(OutPath,"nVertices02.csv"))
-df = pd.DataFrame(remeshedDf,columns=["index","class","fileName","beforeRemesh","afterRemesh"])
+labeledPath = r"D:\My Projects\UU\RemeshedPrinceton"
+labeledPath = r"D:\My Projects\UU\RemeshedLabeledDB"
+df = pd.read_csv(os.path.join(labeledPath,"nVertices.csv"))
+afterRemesh = df["nOfVertices"]
 fig, axs = plt.subplots(1, 1,figsize=(10, 7),tight_layout=True)
-plt.xlabel("nOfObjects")
-plt.ylabel("nOfVerices")
-plt.title('Numbers of verices after remeshing')
-axs.hist(df["afterRemesh"], bins=10)
-print(df["afterRemesh"].to_list())
-plt.savefig(os.path.join(OutPath,"afterRemesh.png"))
+plt.xlabel("nOfVertices")
+plt.ylabel("nOfObjects")
+plt.title('Numbers of verices before remeshing')
+axs.hist(afterRemesh, bins=20)
+plt.savefig(os.path.join(labeledPath,"afterRemesh.png"))
