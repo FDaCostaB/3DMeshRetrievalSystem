@@ -82,40 +82,40 @@ class Mesh:
             b = vertex[tri[1]]
             c = vertex[tri[2]]
             center = [(a[x] + b[x] + c[x]) / 3, (a[y] + b[y] + c[y]) / 3, (a[z] + b[z] + c[z]) / 3]
-            acc[x] += np.sign(center[x]) * (center[x]) ** 2
-            acc[y] += np.sign(center[y]) * (center[y]) ** 2
-            acc[z] += np.sign(center[z]) * (center[z]) ** 2
+            acc[x] += np.sign(center[x]) * center[x] ** 2
+            acc[y] += np.sign(center[y]) * center[y] ** 2
+            acc[z] += np.sign(center[z]) * center[z] ** 2
         return acc
 
-    def swapAxis(self):
+    def principalAxisAlignement(self, doDebug=False):
         stats = self.dataFilter()
         pca = stats[dataName.PCA.value]
-        for i in range(3):
-            maxInd = 0
-            for j in range(0,3):
-                if abs(float(pca[j][i])) >= abs(float(pca[maxInd][i])) :
-                    maxInd = j
-            if maxInd != i :
-                if (i==0 and maxInd==1) or (i==1 and maxInd==0):
-                    self.ms.compute_matrix_from_rotation(rotaxis='Z axis', rotcenter='barycenter', angle=90)
-                elif (i==0 and maxInd==2) or (i==2 and maxInd==1):
-                    self.ms.compute_matrix_from_rotation(rotaxis='Y axis', rotcenter='barycenter', angle=90)
-                elif (i==1 and maxInd==2) or (i==2 and maxInd==1):
-                    self.ms.compute_matrix_from_rotation(rotaxis='X axis', rotcenter='barycenter', angle=90)
-                stats = self.dataFilter()
-                pca = stats[dataName.PCA.value]
+        for vect in pca:
+            vect[0] = vect[0]/Math.length(vect)
+            vect[1] = vect[1]/Math.length(vect)
+            vect[2] = vect[2]/Math.length(vect)
+        facesMat = self.mesh.face_matrix()
+        vertexMat = self.mesh.vertex_matrix()
+        edgesMat = self.mesh.edge_matrix()
+        for i in range(len(vertexMat)) :
+            vertexMat[i] = [Math.dotProduct(pca[0],vertexMat[i]), Math.dotProduct(pca[1],vertexMat[i]), Math.dotProduct(pca[2],vertexMat[i])]
+
+        transformedMesh = pymeshlab.Mesh(vertex_matrix=vertexMat, face_matrix=facesMat,edge_matrix=edgesMat)
+        self.ms.clear()
+        self.ms.add_mesh(transformedMesh)
+        self.mesh = self.ms.current_mesh()
 
     def flipMomentTest(self, doDebug=False):
-        moment = self.momentOrder()
-        if (moment[0] < 0 and doDebug):
-            self.ms.compute_matrix_from_rotation(rotaxis='X axis',rotcenter='barycenter',angle=180)
-            debugLog(os.path.realpath(self.meshPath) + ' : Flip x axis',debugLvl.DEBUG)
-        if (moment[1] < 0 and doDebug):
-            self.ms.compute_matrix_from_rotation(rotaxis='Y axis', rotcenter='barycenter', angle=180)
-            debugLog(os.path.realpath(self.meshPath) + ' : Flip y axis',debugLvl.DEBUG)
-        if (moment[2] < 0 and doDebug):
-            self.ms.compute_matrix_from_rotation(rotaxis='Z axis', rotcenter='barycenter', angle=180)
-            debugLog(os.path.realpath(self.meshPath) + ' : Flip z axis',debugLvl.DEBUG)
+        moment = np.sign(self.momentOrder())
+        facesMat = self.mesh.face_matrix()
+        vertexMat = self.mesh.vertex_matrix()
+        edgesMat = self.mesh.edge_matrix()
+        for i in range(len(vertexMat)) :
+            vertexMat[i] = [vertexMat[i][0]*moment[0], vertexMat[i][1]*moment[1], vertexMat[i][2]*moment[2]]
+        transformedMesh = pymeshlab.Mesh(vertex_matrix=vertexMat, face_matrix=facesMat,edge_matrix=edgesMat )
+        self.ms.clear()
+        self.ms.add_mesh(transformedMesh)
+        self.mesh = self.ms.current_mesh()
 
     def normalise(self, showDebug=False):
         stats = self.dataFilter()
@@ -125,8 +125,7 @@ class Mesh:
         self.ms.compute_matrix_from_translation(traslmethod='XYZ translation', axisx=-1 * stats[dataName.BARYCENTER.value][0],
                                            axisy=-1 * stats[dataName.BARYCENTER.value][1],
                                            axisz=-1 * stats[dataName.BARYCENTER.value][2])
-        self.ms.compute_matrix_by_principal_axis()
-        self.swapAxis()
+        self.principalAxisAlignement(showDebug)
         self.flipMomentTest(showDebug)
         stats = self.dataFilter()
         self.ms.compute_matrix_from_scaling_or_normalization(axisx=1/stats[dataName.SIDE_SIZE.value],scalecenter='barycenter', uniformflag=True)
@@ -136,8 +135,8 @@ class Mesh:
             self.compare()
 
     def resample(self, expectedVerts=10000, eps=1000, showComparison=False):
-        # if showComparison:
-        #    self.printProperties()
+        if showComparison:
+           self.printProperties()
 
         self.ms.apply_filter('meshing_remove_duplicate_faces')
         self.ms.apply_filter('meshing_remove_duplicate_vertices')
@@ -152,14 +151,15 @@ class Mesh:
             self.compare()
 
     def compare(self):
+        setPolyscopeSetting(1280, 720)
         if len(self.ms) == 1 :
             self.ms.load_new_mesh(self.meshPath)
             self.ms.set_current_mesh(0)
         ps.init()
-        ps.register_point_cloud("Before cloud points", self.ms.mesh(1).vertex_matrix())
-        ps.register_surface_mesh("Before Mesh", self.ms.mesh(1).vertex_matrix(), self.ms.mesh(1).face_matrix())
-        ps.register_point_cloud("After cloud points", self.ms.mesh(0).vertex_matrix())
-        ps.register_surface_mesh("After Mesh", self.ms.mesh(0).vertex_matrix(), self.ms.mesh(0).face_matrix())
+        ps.register_point_cloud("Before cloud points", self.ms.mesh(len(self.ms)-1).vertex_matrix())
+        ps.register_surface_mesh("Before Mesh", self.ms.mesh(len(self.ms)-1).vertex_matrix(), self.ms.mesh(len(self.ms)-1).face_matrix())
+        ps.register_point_cloud("After cloud points", self.ms.mesh(len(self.ms)-2).vertex_matrix())
+        ps.register_surface_mesh("After Mesh", self.ms.mesh(len(self.ms)-2).vertex_matrix(), self.ms.mesh(len(self.ms)-2).face_matrix())
         ps.show()
 
     def A3(self, sampleNum=10000):
@@ -291,6 +291,7 @@ class Mesh:
         self.ms.save_current_mesh(os.path.splitext(newPath)[0]+".off")
 
     def render(self):
+        setPolyscopeSetting(1280, 720)
         ps.init()
         ps_cloud = ps.register_point_cloud("my points", self.ms.mesh(0).vertex_matrix())
         ps_cloud.set_radius(0.002)
@@ -311,3 +312,25 @@ class Mesh:
         ps.screenshot('./screenshot/'+fileName+'_y.jpg', False)
         ps.set_up_dir("z_up")
         ps.screenshot('./screenshot/'+fileName+'_z.jpg', False)
+
+    def screenshot(self,saveTo, camLocation="diagonal"):
+        os.makedirs('./screenshot', exist_ok=True)
+        fileName = os.path.splitext(os.path.basename(self.meshPath))[0]
+        setPolyscopeSetting(450, 450)
+        ps.init()
+        ps.set_ground_plane_mode("none")
+        ps.register_surface_mesh("my mesh", self.ms.mesh(0).vertex_matrix(), self.ms.mesh(0).face_matrix(), material='clay',color=[0,0,1])
+        ps.set_screenshot_extension(".jpg");
+        ps.set_up_dir("z_up")
+        if camLocation == "diagonal" :
+            ps.set_view_projection_mode('perspective')
+            ps.look_at((1.5, -1.5 , 1.5), (0., 0., 0.))
+        if camLocation == "straight" :
+            ps.set_view_projection_mode('orthographic')
+            ps.look_at((0., -0.5 , 0.), (0., 0., 0.))
+        ps.screenshot(saveTo+'/'+fileName+'.jpg', False)
+
+def setPolyscopeSetting(windowWidth, windowHeight, windowPosX=100, windowPosY=100):
+    f = open(".polyscope.ini", "w")
+    f.write("{\n\"windowHeight\": "+str(windowHeight)+",\n\"windowPosX\": "+str(windowPosX)+",\n\"windowPosY\": "+str(windowPosY)+",\n\"windowWidth\": "+str(windowWidth)+"\n}")
+    f.close()

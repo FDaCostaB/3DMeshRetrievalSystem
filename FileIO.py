@@ -3,7 +3,9 @@ import os
 from Mesh import Mesh
 from dataName import dataName, dataDimension
 import matplotlib.pyplot as plt
-from Debug import debugLvl,debugLog
+from matplotlib import image as mpimg
+from Debug import debugLvl, debugLog
+import matplotlib.image as mpimg
 
 class DataIO:
     def __init__(self,outputDir):
@@ -123,6 +125,50 @@ def XYZdataVisualisation(list, feature, outputDir,size_x=10, size_y=7):
     plt.ylabel('count')
     plt.legend()
     plt.savefig("./" + outputDir + "/" + feature.lower() + '.png')
+
+
+def normCategory(path, expectedVerts,eps):
+    totalMesh = 0
+    FileIt = os.scandir(path)
+    for file in FileIt:
+        fileType = os.path.splitext(os.path.realpath(file))[1]
+        if fileType == ".obj" or fileType == ".off":
+            totalMesh += 1
+            mesh = Mesh(os.path.realpath(file))
+            mesh.resample(expectedVerts, eps)
+            mesh.saveMesh()
+    FileIt.close()
+
+
+def viewCategory(path, camPos="diagonal", debug=False):
+    totalMesh = 0
+    outPath = os.path.join('./output', os.path.relpath(path, './Models'))
+    os.makedirs(os.path.join(os.path.realpath(outPath),'screenshot'), exist_ok=True)
+    FileIt = os.scandir(outPath)
+    for file in FileIt:
+        fileType = os.path.splitext(os.path.realpath(file))[1]
+        if fileType == ".obj" or fileType == ".off":
+            totalMesh += 1
+            mesh = Mesh(os.path.realpath(file))
+            mesh.screenshot(os.path.join(os.path.realpath(outPath), 'screenshot'), camPos)
+    FileIt.close()
+
+    nbOfLine = (totalMesh//5)
+    if totalMesh%5>0 : nbOfLine += 1
+    fig, axs = plt.subplots(nbOfLine, 5, figsize=(20, 20))
+    i=0
+    FileIt = os.scandir(os.path.join(os.path.realpath(outPath), 'screenshot'))
+    for screen in FileIt:
+        fileType = os.path.splitext(os.path.realpath(screen))[1]
+        if screen.is_file() and fileType == ".jpg":
+            image = mpimg.imread(os.path.realpath(screen))
+            axs[i//5, i%5].imshow(image)
+            axs[i//5, i%5].axis('off')
+            axs[i//5, i%5].set_title(str(screen.name))
+            i+=1
+    plt.savefig(outPath + "/meshes_overview.jpg")
+    if(debug):
+        plt.show()
 
 
 # From a List of dictionnary retrieve a list of the element with key field of each dictionnary
