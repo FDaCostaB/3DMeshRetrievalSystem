@@ -18,8 +18,7 @@ class Mesh:
             self.ms = pymeshlab.MeshSet()
             self.ms.load_new_mesh(meshPath)
             self.mesh = self.ms.current_mesh()
-            self.expectedVerts = 5000
-            self.eps = 100
+            self.cellSizeOfRemeshing = pymeshlab.Percentage(1.25)
         else:
             raise Exception("Format not accepted")
 
@@ -38,44 +37,11 @@ class Mesh:
                dataName.DIST_BARYCENTER.value : Math.length(out_dict['barycenter']),dataName.PCA.value :list(out_dict['pca']), dataName.DIAGONAL.value : self.mesh.bounding_box().diagonal()}
         return res
 
-    def refine(self, expectedVerts=None, eps=None):
-        LIMIT = 5
-        if expectedVerts is None: expectedVerts = self.expectedVerts
-        else: self.expectedVerts = expectedVerts
-        if eps is None: eps = self.eps
-        else: self.eps = eps
-
-
-        oldStats = self.dataFilter()
-        newStats = self.dataFilter()
-
-        # Subdivide vertix up to five time to get in range [expectedVerts - eps, expectedVerts + eps]
-        i = 0
-        while (newStats[dataName.VERTEX_NUMBERS.value] < expectedVerts - eps and i < LIMIT):
-            if newStats[dataName.VERTEX_NUMBERS.value] < self.expectedVerts - self.eps:
-                try:
-                    self.ms.apply_filter('meshing_surface_subdivision_loop', iterations=1)
-                except:
-                    self.ms.apply_filter('meshing_repair_non_manifold_edges', method='Remove Faces')
-                    self.ms.apply_filter('meshing_repair_non_manifold_vertices')
-                    debugLog(os.path.realpath(self.meshPath) + " - ERROR : Failed to apply filter:  'meshing_surface_subdivision_loop' => Applying Non-Manifold Repair",debugLvl.ERROR)
-            newStats = self.dataFilter()
-            i += 1
-
-        # Decimation (merging vertex) to reduce in range [expectedVerts - eps, expectedVerts + eps]
-        if newStats[dataName.VERTEX_NUMBERS.value] > self.expectedVerts + self.eps:
-            self.ms.apply_filter('meshing_decimation_quadric_edge_collapse',targetperc=self.expectedVerts / newStats[dataName.VERTEX_NUMBERS.value])
-        newStats = self.dataFilter()
-
-        # Laplacian smooth to get a more uniformly distributed point cloud over the mesh
-        try:
-            self.ms.apply_filter('apply_coord_laplacian_smoothing', stepsmoothnum=5)
-        except:
-            debugLog(os.path.realpath(self.meshPath) + " - ERROR : Failed to apply filter:  'apply_coord_laplacian_smoothing.",debugLvl.ERROR)
-        if newStats[dataName.VERTEX_NUMBERS.value] < self.expectedVerts - self.eps or newStats[
-            dataName.VERTEX_NUMBERS.value] > self.expectedVerts + self.eps:
-            debugLog(os.path.realpath(self.meshPath) + ' : Before - ' + str(oldStats[dataName.VERTEX_NUMBERS.value]) +
-                     ' | After - ' + str(newStats[dataName.VERTEX_NUMBERS.value]), debugLvl.WARNING)
+    def remesh(self):
+        self.ms.apply_filter('meshing_remove_duplicate_faces')
+        self.ms.apply_filter('meshing_remove_duplicate_vertices')
+        self.ms.apply_filter('meshing_remove_unreferenced_vertices')
+        self.ms.generate_resampled_uniform_mesh(cellsize = self.cellSizeOfRemeshing)
 
     def momentOrder(self):
         faces = self.mesh.face_matrix()
@@ -139,16 +105,11 @@ class Mesh:
             self.printProperties()
             self.compare()
 
-    def resample(self, expectedVerts=10000, eps=1000, showComparison=False):
+    def resample(self, showComparison=False):
         if showComparison:
            self.printProperties()
 
-        self.ms.apply_filter('meshing_remove_duplicate_faces')
-        self.ms.apply_filter('meshing_remove_duplicate_vertices')
-        self.ms.apply_filter('meshing_remove_unreferenced_vertices')
-        self.expectedVerts = expectedVerts
-        self.eps = eps
-        self.refine()
+        self.remesh()
         self.normalise()
 
         if showComparison:

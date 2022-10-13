@@ -72,33 +72,27 @@ class DBData:
         if len(threeD) != 0: self.plot3D(threeD)
         if len(oneD) != 0: self.plot(oneD)
 
-
-def normalise():
+def normalization():
     totalMesh = 0
-    for dir in os.scandir("./remesh/PRINCETON"):
-        if os.path.isdir(dir):
-            FileIt = os.scandir(os.path.join("./remesh/PRINCETON", dir.name))
-            for file in FileIt:
-                fileType = os.path.splitext(os.path.realpath(file))[1]
-                if fileType == ".obj" or fileType == ".off" or fileType == ".ply":
-                    totalMesh += 1
-                    mesh = Mesh(os.path.realpath(file))
-                    mesh.normalise()
-                    mesh.saveMesh()
-            FileIt.close()
-    for dir in os.scandir("./remesh/LabeledDB"):
-        if os.path.isdir(dir):
-            FileIt =os.scandir(os.path.join("./remesh/LabeledDB", dir.name))
-            for file in FileIt:
-                fileType = os.path.splitext(os.path.realpath(file))[1]
-                if fileType == ".obj" or fileType == ".off" or fileType == ".ply":
-                    totalMesh += 1
-                    mesh = Mesh(os.path.realpath(file))
-                    mesh.normalise()
-                    mesh.saveMesh()
-            FileIt.close()
-    debugLog('Total mesh :' + str(totalMesh), debugLvl.DEBUG)
+    dirs = [
+        "./remesh/PRINCETON",
+        "./remesh/LabeledDB"
+    ]
+    for dir in dirs:
+        normalise(dir)
 
+def normalise(dbDir):
+    for dir in os.scandir(dbDir):
+        if os.path.isdir(dir):
+            FileIt = os.scandir(os.path.join(dbDir, dir.name))
+            for file in FileIt:
+                fileType = os.path.splitext(os.path.realpath(file))[1]
+                if fileType == ".obj" or fileType == ".off" or fileType == ".ply":
+                    totalMesh += 1
+                    mesh = Mesh(os.path.realpath(file))
+                    mesh.resample()
+                    mesh.saveMesh()
+            FileIt.close()
 
 def dataVisualisation(list, feature, outputDir, n_bins=20, size_x=10, size_y=7):
     fig, axs = plt.subplots(1, 1, figsize=(size_x, size_y), tight_layout=True)
