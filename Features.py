@@ -4,6 +4,8 @@ import pymeshlab
 import polyscope as ps
 import numpy as np
 import Math
+from featureName import featureName, featureDimension
+from DebugLog import debugLog, debugLvl
 
 
 class FeaturesExtract:
@@ -135,22 +137,26 @@ class FeaturesExtract:
                                                  Math.vect(barycenter_cloud[compInd], vertices[triVerts[1]]),
                                                  Math.vect(barycenter_cloud[compInd], vertices[triVerts[2]]))
                 volume += abs(tetraVol)
+        # geoMes=self.ms.get_geometric_measures()
+        # if('mesh_volume' in geoMes.keys()): pmVol =geoMes['mesh_volume']
+        # else: pmVol='None'
+        # debugLog('Our Volume : ' + str(volume)+ " - PyMeshLab volume : " + str(pmVol),debugLvl.DEBUG)
         return volume
 
     def call(self, funcName):
-        if funcName=="A3":
+        if funcName==featureName.A3.value:
             return self.A3()
-        elif funcName=="D1":
+        elif funcName==featureName.D1.value:
             return self.D1()
-        elif funcName=="D2":
+        elif funcName==featureName.D2.value:
             return self.D2()
-        elif funcName=="D3":
+        elif funcName==featureName.D3.value:
             return self.D3()
-        elif funcName=="D4":
+        elif funcName==featureName.D4.value:
             return self.D4()
-        elif funcName=="surfaceArea":
+        elif funcName==featureName.SURFACE_AREA.value:
             return self.surfaceArea()
-        elif funcName=="volume":
+        elif funcName==featureName.VOLUME.value:
             return self.volume()
 
     # Returns list containing a list of face for each component
