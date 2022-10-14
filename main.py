@@ -10,19 +10,15 @@ if len(sys.argv) == 1:
     db.plot('remesh')
     db.plot('output')
 elif len(sys.argv) == 2:
-    db.drawCategoryFeatures(sys.argv[1], [featureName.SPHERICITY.value])
-    # ms = Mesh(sys.argv[1])
-    # ms.resample()
-    # ms.saveMesh("./initial")
+    db.drawCategoryFeatures(sys.argv[1], [featureName.RECTANGULARITY.value])
+    # feature = FeaturesExtract(sys.argv[1])
+    # feature.showBoundingBox()
 
     # ms = Mesh(sys.argv[1])
     # feature = FeaturesExtract(sys.argv[1])
     # print(feature.surfaceArea())
 
-    # db.normCategory(sys.argv[1])
-    # db.viewCategory(sys.argv[1], 'diagonal', True)
-
     # ms = Mesh(sys.argv[1])
     # ms.resample()
-    # ms.render()
     # ms.saveMesh()
+    # ms.render()
