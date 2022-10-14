@@ -165,6 +165,8 @@ class FeaturesExtract:
             return self.rectangularity()
         elif funcName==featureName.COMPACTNESS.value:
             return self.compactness()
+        elif funcName == featureName.SPHERICITY.value:
+            return self.sphericity()
 
     # Returns list containing a list of face for each component
     def getComponentsFaceList(self, debug=False):
@@ -233,6 +235,8 @@ class FeaturesExtract:
         c = (area ** 3 / (36 * pi * volume ** 2))
         return c
 
+    def sphericity(self):
+        return 1/self.compactness()
 # ---------------------------------------------------------------------------------------------- #
 # ---------------------------------------- I/O features ---------------------------------------- #
 # ---------------------------------------------------------------------------------------------- #
