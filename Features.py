@@ -5,6 +5,7 @@ import polyscope as ps
 import numpy as np
 from math import pi
 import Math
+import polyscopeUI
 from featureName import featureName, featureDimension
 from DebugLog import debugLog, debugLvl
 
@@ -137,12 +138,12 @@ class FeaturesExtract:
                 tetraVol=Math.tetrahedronVolume(Math.vect(barycenter_cloud[compInd], vertices[triVerts[0]]),
                                                  Math.vect(barycenter_cloud[compInd], vertices[triVerts[1]]),
                                                  Math.vect(barycenter_cloud[compInd], vertices[triVerts[2]]))
-                volume += abs(tetraVol)
+                volume += tetraVol
         # geoMes=self.ms.get_geometric_measures()
         # if('mesh_volume' in geoMes.keys()): pmVol =geoMes['mesh_volume']
         # else: pmVol='None'
         # debugLog('Our Volume : ' + str(volume)+ " - PyMeshLab volume : " + str(pmVol),debugLvl.DEBUG)
-        return volume
+        return abs(volume)
 
     def call(self, funcName):
         if funcName==featureName.A3.value:
@@ -209,8 +210,12 @@ class FeaturesExtract:
         max = self.mesh.bounding_box().max()
         return (max[0] - min[0]) * (max[1] - min[1]) * (max[2] - min[2])
 
+    # Special case - C:\Users\fabie\PycharmProjects\3DMeshRetrievalSystem\output\LabeledDB\Bearing\357.off
     def rectangularity(self):
-        return self.volume()/self.volumeOBB()
+        res = self.volume()/self.volumeOBB()
+        if(res > 0.9): debugLog(self.meshPath +" : Rectangularity value very high", debugLvl.WARNING)
+        if(res > 1): debugLog(self.meshPath +" : Rectangularity value above 1", debugLvl.ERROR)
+        return res
 
     def barycenter(self, faceList):
         sumX = 0
@@ -233,9 +238,24 @@ class FeaturesExtract:
         c = (area ** 3 / (36 * pi * volume ** 2))
         return c
 
+    def boundingBox(self):
+        min = self.mesh.bounding_box().min()
+        max = self.mesh.bounding_box().max()
+        vertex = [[min[0],min[1],min[2]], [min[0],max[1],min[2]], [min[0],max[1],max[2]], [min[0],min[1],max[2]],
+                 [max[0],min[1],min[2]], [max[0],min[1],max[2]], [max[0],max[1],min[2]], [max[0],max[1],max[2]]]
+        faces = [[0, 1, 2], [0,2,3], [0,3,4], [3, 4, 5], [1, 2, 6], [2, 6, 7], [2, 3, 5], [2, 5, 7], [0, 1, 4], [1, 4, 6], [4, 5, 6], [5, 6, 7]]
+        return vertex, faces
 # ---------------------------------------------------------------------------------------------- #
 # ---------------------------------------- I/O features ---------------------------------------- #
 # ---------------------------------------------------------------------------------------------- #
+
+    def showBoundingBox(self):
+        vertex, faces = self.boundingBox()
+        ps.init()
+        ps.register_point_cloud("Before cloud points", self.ms.mesh(0).vertex_matrix())
+        ps.register_surface_mesh("Before Mesh", self.ms.mesh(0).vertex_matrix(), self.ms.mesh(0).face_matrix())
+        ps.register_surface_mesh("Bounding box", np.array(vertex), np.array(faces))
+        ps.show()
 
     def silhouetteExport(self):
         os.makedirs('./screenshot', exist_ok=True)
