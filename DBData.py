@@ -1,3 +1,4 @@
+import numpy as np
 import csv
 import os
 import matplotlib.pyplot as plt
@@ -6,6 +7,7 @@ from Features import FeaturesExtract
 from parse import getFieldList, getIndexList
 from Mesh import Mesh
 from dataName import dataName, dataDimension
+from featureName import featureName, featureDimension
 from DebugLog import debugLvl, debugLog
 import numpy as np
 
@@ -112,48 +114,91 @@ def XYZdataVisualisation(list, feature, outputDir,size_x=10, size_y=7):
     plt.legend()
     plt.savefig("./" + outputDir + "/" + feature.lower() + '.png')
 
-def drawHistogram(path, funcName):
-    FileIt = os.scandir(path)
-    acc = []
-    for file in FileIt:
-        fileType = os.path.splitext(os.path.realpath(file))[1]
-        if fileType == ".obj" or fileType == ".off" or fileType == ".ply":
-            features = FeaturesExtract(os.path.realpath(file))
-            res = features.call(funcName)
-            acc.append(res)
-    FileIt.close()
-    res=[]
-    for objVal in acc:
-        y, binEdges = np.histogram(objVal, bins=50)
-        x = 0.5 * (binEdges[1:] + binEdges[:-1])
-        res.append([x, y])
-    return [res,path]
 
-def drawFeatures(dbDir, funcName):
-    dbValue = []
+def exportFeatures(dbDir, funcName):
+    dbHistValue = []
+    dbScalarValue = []
     nbCat=0
     for dir in os.scandir(dbDir):
         if os.path.isdir(dir):
             catVal=drawHistogram(os.path.join(dbDir, dir.name),funcName)
-            dbValue.append(catVal)
+            if featureDimension[funcName]==1: dbScalarValue.append(catVal)
+            elif featureDimension[funcName]==2: dbHistValue.append(catVal)
             nbCat += 1
+    return dbScalarValue, dbHistValue, nbCat
+
+
+def drawHistogram(path, funcName):
+    FileIt = os.scandir(path)
+    res = []
+    if featureDimension[funcName] == 1:
+        for file in FileIt:
+            fileType = os.path.splitext(os.path.realpath(file))[1]
+            if fileType == ".obj" or fileType == ".off" or fileType == ".ply":
+                features = FeaturesExtract(os.path.realpath(file))
+                featureVal = features.call(funcName)
+                res.append(featureVal)
+        FileIt.close()
+        return [res, path]
+    elif featureDimension[funcName] == 2:
+        acc = []
+        for file in FileIt:
+            fileType = os.path.splitext(os.path.realpath(file))[1]
+            if fileType == ".obj" or fileType == ".off" or fileType == ".ply":
+                features = FeaturesExtract(os.path.realpath(file))
+                featureVal = features.call(funcName)
+                acc.append(featureVal)
+        FileIt.close()
+        for objVal in acc:
+            y, binEdges = np.histogram(objVal, bins=50)
+            x = 0.5 * (binEdges[1:] + binEdges[:-1])
+            res.append([x, y])
+        return [res,path]
+
+
+def drawFeatures(dbDir, funcName):
+    dbScalarValue, dbHistValue, nbCat = exportFeatures(dbDir, funcName)
+
     nbOfLine = (nbCat // 3)
     if nbCat % 3 > 0: nbOfLine += 1
     fig, axs = plt.subplots(nbOfLine, 3, figsize=(25, 35))
-    i=0
-    for catValue in dbValue:
-        values = catValue[0]
-        catName = catValue[1]
-        for objvalue in values:
-            axs[i//3, i%3].plot(objvalue[0], objvalue[1])
-        axs[i//3, i%3].set_title(str(os.path.relpath(catName, dbDir)))
-        i+=1
-    plt.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=0.95, wspace=0.2, hspace=0.3)
-    plt.savefig("./output/"+funcName+".jpg")
 
-def exportCategoryFeatures(dbDir):
-    # functionsName = ['A3', 'D1', 'D2', 'D3', 'D4']
-    functionsName = ['compactness']
+    if len(dbScalarValue) > 0:
+        i=0
+        for catValue in dbScalarValue:
+            values = catValue[0]
+            catName = catValue[1]
+            if funcName == featureName.VOLUME.value: bins=[0.01*i for i in range(101)]
+            elif funcName == featureName.SURFACE_AREA.value: bins=[0.1*i for i in range(51)]
+            else: bins = 20
+            axs[i//3, i%3].hist(values, bins=bins)
+            axs[i//3, i%3].set_title(str(os.path.relpath(catName, dbDir)))
+            i+=1
+        while (i % 3) != 0:
+            axs[i // 3, i % 3].set_visible(False)
+            i+=1
+        plt.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=0.9, wspace=0.3, hspace=0.4)
+        plt.savefig("./output/" + funcName + ".jpg")
+
+    if len(dbHistValue) > 0:
+        plt.cla()
+        plt.clf()
+        i = 0
+        for catValue in dbHistValue:
+            values = catValue[0]
+            catName = catValue[1]
+            for objvalue in values:
+                axs[i // 3, i % 3].plot(objvalue[0], objvalue[1])
+            axs[i // 3, i % 3].set_title(str(os.path.relpath(catName, dbDir)))
+            i += 1
+        while (i % 3) != 0:
+            axs[i // 3, i % 3].set_visible(False)
+            i += 1
+        plt.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=0.95, wspace=0.2, hspace=0.3)
+        plt.savefig("./output/" + funcName + ".jpg")
+
+def drawCategoryFeatures(dbDir,functionsName=None):
+    if functionsName is None: functionsName = [f.value for f in featureName]
     for funcName in functionsName:
         drawFeatures(dbDir, funcName)
 

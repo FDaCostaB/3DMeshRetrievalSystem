@@ -4,6 +4,8 @@ import pymeshlab
 import polyscope as ps
 import numpy as np
 import Math
+from featureName import featureName, featureDimension
+from DebugLog import debugLog, debugLvl
 
 
 class FeaturesExtract:
@@ -18,10 +20,10 @@ class FeaturesExtract:
         else:
             raise Exception("Format not accepted")
 
-
 # ---------------------------------------------------------------------------------------------- #
 # ------------------------------------ Features computation ------------------------------------ #
 # ---------------------------------------------------------------------------------------------- #
+
     def A3(self, sampleNum=100000):
         vertices = self.ms.mesh(0).vertex_matrix()
         res = []
@@ -135,23 +137,31 @@ class FeaturesExtract:
                                                  Math.vect(barycenter_cloud[compInd], vertices[triVerts[1]]),
                                                  Math.vect(barycenter_cloud[compInd], vertices[triVerts[2]]))
                 volume += abs(tetraVol)
+        # geoMes=self.ms.get_geometric_measures()
+        # if('mesh_volume' in geoMes.keys()): pmVol =geoMes['mesh_volume']
+        # else: pmVol='None'
+        # debugLog('Our Volume : ' + str(volume)+ " - PyMeshLab volume : " + str(pmVol),debugLvl.DEBUG)
         return volume
 
     def call(self, funcName):
-        if funcName=="A3":
+        if funcName==featureName.A3.value:
             return self.A3()
-        elif funcName=="D1":
+        elif funcName==featureName.D1.value:
             return self.D1()
-        elif funcName=="D2":
+        elif funcName==featureName.D2.value:
             return self.D2()
-        elif funcName=="D3":
+        elif funcName==featureName.D3.value:
             return self.D3()
-        elif funcName=="D4":
+        elif funcName==featureName.D4.value:
             return self.D4()
-        elif funcName=="surfaceArea":
+        elif funcName==featureName.SURFACE_AREA.value:
             return self.surfaceArea()
-        elif funcName=="volume":
+        elif funcName==featureName.VOLUME.value:
             return self.volume()
+        elif funcName==featureName.CENTROID.value:
+            return Math.length(self.centroid())
+        elif funcName==featureName.RECTANGULARITY.value:
+            return self.rectangularity()
 
     # Returns list containing a list of face for each component
     def getComponentsFaceList(self, debug=False):
@@ -182,11 +192,27 @@ class FeaturesExtract:
             ps.show()
         return components, barycenter_cloud
 
+    def centroid(self):
+        vertexMat = self.mesh.vertex_matrix()
+        centroid = [0, 0, 0]
+        for vert in vertexMat:
+            centroid[0] += vert[0]
+            centroid[1] += vert[1]
+            centroid[2] += vert[2]
+        return [coord/len(vertexMat) for coord in centroid]
+
+    def volumeOBB(self):
+        min = self.mesh.bounding_box().min()
+        max = self.mesh.bounding_box().max()
+        return (max[0] - min[0]) * (max[1] - min[1]) * (max[2] - min[2])
+
+    def rectangularity(self):
+        return self.volume()/self.volumeOBB()
 
     def barycenter(self, faceList):
-        sumX = 0;
-        sumY = 0;
-        sumZ = 0;
+        sumX = 0
+        sumY = 0
+        sumZ = 0
         total = 0
         vertexMat = self.mesh.vertex_matrix()
         faceMat = self.mesh.face_matrix()
@@ -216,7 +242,7 @@ class FeaturesExtract:
         ps.register_surface_mesh("my mesh", self.ms.mesh(0).vertex_matrix(), self.ms.mesh(0).face_matrix(), material='flat',
                                  color=[0, 0, 0])
         ps.set_view_projection_mode("orthographic")
-        ps.set_screenshot_extension(".jpg");
+        ps.set_screenshot_extension(".jpg")
         ps.set_up_dir("x_up")
         ps.screenshot('./screenshot/' + fileName + '_x.jpg', False)
         ps.set_up_dir("y_up")
