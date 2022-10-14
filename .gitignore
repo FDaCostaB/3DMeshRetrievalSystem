@@ -12,6 +12,7 @@ Log
 #3D Shape Models and results
 Models.zip
 initial
+output
 remesh
 *.ply
 *.off

@@ -1,5 +1,7 @@
 import sys
 import DBData as db
+import os
+from Features import FeaturesExtract
 from Mesh import Mesh
 
 if len(sys.argv) == 1:
@@ -7,9 +9,19 @@ if len(sys.argv) == 1:
     db.plot('remesh')
     db.plot('output')
 elif len(sys.argv) == 2:
-    # db.normCategory(sys.argv[1])
-    db.viewCategory(sys.argv[1], 'diagonal', True)
+    db.exportCategoryFeatures(sys.argv[1])
     # ms = Mesh(sys.argv[1])
+    # ms.resample()
+    # ms.saveMesh("./initial")
+
+    # ms = Mesh(sys.argv[1])
+    # feature = FeaturesExtract(sys.argv[1])
+    # print(feature.surfaceArea())
+
+    # db.normCategory(sys.argv[1])
+    # db.viewCategory(sys.argv[1], 'diagonal', True)
+
+    # ms = Mesh(sys.argv[1])
+    # ms.resample()
     # ms.render()
-    # ms.silhouetteExport()
-    # ms.resample(5000, 1000, True)
+    # ms.saveMesh()

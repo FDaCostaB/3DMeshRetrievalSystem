@@ -8,38 +8,36 @@ def dist(a, b):
     return ((b[x] - a[x])**2 + (b[y] - a[y])**2 + (b[z] - a[z])**2)**0.5
 
 
-def length(v):
-    return dist(v, [0, 0, 0])
+def length(vect):
+    return dist(vect, [0, 0, 0])
 
 
 def triangleArea(a, b, c):
-    ab = dist(a, b)
-    bc = dist(b, c)
-    ac = dist(a, c)
-    s = (ab+bc+ac) / 2
-    area = (s*(s-ab)*(s-bc)*(s-ac))**0.5
-    return area
+    return triangleAreaVector(vect(a,b),vect(a,c))
 
 
-def triangleAreaVector(a, b):
-    return length(crossProduct(a, b))/2
+def triangleAreaVector(vectA, vectB):
+    return length(crossProduct(vectA, vectB))/2
 
 
-def dotProduct(a, b):
-    return a[0]*b[0]+a[1]*b[1]+a[2]*b[2]
+def dotProduct(vectA, vectB):
+    return vectA[0] * vectB[0] + vectA[1] * vectB[1] + vectA[2] * vectB[2]
 
 
-def crossProduct(a, b):
-    return [a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]]
+def crossProduct(vectA, vectB):
+    return [vectA[1] * vectB[2] - vectA[2] * vectB[1], vectA[2] * vectB[0] - vectA[0] * vectB[2], vectA[0] * vectB[1] - vectA[1] * vectB[0]]
 
 
-def angle(a, b):
-    return np.arccos(dotProduct(a, b)/length(a)*length(b))
+def angle(vectA, vectB):
+    similarity = dotProduct(vectA, vectB) / (length(vectA) * length(vectB))
+    if similarity < -1 : similarity = -1
+    if similarity > 1 : similarity = 1
+    return np.arccos(similarity)
 
 
-def tetrahedronVolume(a, b, c):
-    return dotProduct(crossProduct(a, b), c)/6
+def tetrahedronVolume(vectA, vectB, vectC):
+    return dotProduct(crossProduct(vectA, vectB), vectC) / 6
 
 
-def vect(a, b):
-    return [b[0]-a[0], b[1]-a[1], b[2]-a[2]]
+def vect(vectA, vectB):
+    return [vectB[0] - vectA[0], vectB[1] - vectA[1], vectB[2] - vectA[2]]

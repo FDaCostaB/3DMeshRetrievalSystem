@@ -1,13 +1,12 @@
-import random
 import os.path
 from pathlib import Path
 import pymeshlab
 import polyscope as ps
 import numpy as np
-import Math
 from dataName import dataName
 from DebugLog import debugLvl, debugLog
 import polyscopeUI as psUI
+import Math
 
 
 class Mesh:
@@ -29,7 +28,7 @@ class Mesh:
         p1 = Path(self.meshPath)
         category = os.path.relpath(p1.parent, p1.parent.parent)
         for face in self.mesh.polygonal_face_list():
-            if len(face)==4 : raise Exception("Quads found")
+            if len(face)==4 : print("--------------------------------------Quads found--------------------------------------")
         out_dict = self.ms.get_geometric_measures()
         size = [ self.mesh.bounding_box().dim_x(), self.mesh.bounding_box().dim_y(), self.mesh.bounding_box().dim_z()]
         res = {dataName.CATEGORY.value : category, dataName.FACE_NUMBERS.value : self.mesh.face_number(), dataName.VERTEX_NUMBERS.value : self.mesh.vertex_number(),
@@ -92,15 +91,15 @@ class Mesh:
 
     def normalise(self, showComparison=False):
         stats = self.dataFilter()
-
         self.ms.compute_matrix_from_translation(traslmethod='XYZ translation', axisx=-1 * stats[dataName.BARYCENTER.value][0],
                                            axisy=-1 * stats[dataName.BARYCENTER.value][1],
                                            axisz=-1 * stats[dataName.BARYCENTER.value][2])
         self.principalAxisAlignement()
         self.flipMomentTest()
         stats = self.dataFilter()
-        self.ms.compute_matrix_from_scaling_or_normalization(axisx=1/stats[dataName.SIDE_SIZE.value],customcenter=stats[dataName.BARYCENTER.value], uniformflag=True)
-
+        self.ms.compute_matrix_from_scaling_or_normalization(axisx=1 / stats[dataName.SIDE_SIZE.value],
+                                                             customcenter=stats[dataName.BARYCENTER.value],
+                                                             uniformflag=True)
         if showComparison:
             self.printProperties()
             self.compare()
@@ -116,123 +115,10 @@ class Mesh:
             self.printProperties()
             self.compare()
 
-    # ---------------------------------------------------------------------------------------------- #
-    # ------------------------------------ Features computation ------------------------------------ #
-    # ---------------------------------------------------------------------------------------------- #
-    def A3(self, sampleNum=10000):
-        vertices = self.ms.mesh(0).vertex_matrix()
-        res = []
-        for i in range(sampleNum):
-            i0 = random.randint(0,len(vertices)-1)
-            i1 = random.randint(0,len(vertices)-1)
-            i2 = random.randint(0,len(vertices)-1)
-            res.append(Math.angle(Math.vect(i1, i0), Math.vect(i1, i2)))
-        return res
 
-    def D1(self, sampleNum=10000):
-        vertices = self.ms.mesh(0).vertex_matrix()
-        res = []
-        for i in range(sampleNum):
-            i0 = random.randint(0,len(vertices)-1)
-            res.append(Math.length(i0))
-        return res
-
-    def D2(self, sampleNum=10000):
-        vertices = self.ms.mesh(0).vertex_matrix()
-        res = []
-        for i in range(sampleNum):
-            i0 = random.randint(0, len(vertices) - 1)
-            i1 = random.randint(0, len(vertices) - 1)
-            res.append(Math.dist(i0, i1))
-        return res
-
-    def D3(self, sampleNum=10000):
-        vertices = self.ms.mesh(0).vertex_matrix()
-        res = []
-        for i in range(sampleNum):
-            i0 = random.randint(0, len(vertices) - 1)
-            i1 = random.randint(0, len(vertices) - 1)
-            i2 = random.randint(0, len(vertices) - 1)
-            res.append(Math.triangleArea(i0, i1, i2)**0.5)
-        return res
-
-    def D4(self, sampleNum=10000):
-        vertices = self.ms.mesh(0).vertex_matrix()
-        res = []
-        for i in range(sampleNum):
-            i0 = random.randint(0, len(vertices) - 1)
-            i1 = random.randint(0, len(vertices) - 1)
-            i2 = random.randint(0, len(vertices) - 1)
-            i3 = random.randint(0, len(vertices) - 1)
-            res.append(Math.tetrahedronVolume(Math.vect(i0, i1), Math.vect(i0, i2), Math.vect(i0, i3))**(1/3))
-        return res
-
-    def surfaceArea(self):
-        vertices = self.ms.mesh(0).vertex_matrix()
-        faces = self.ms.mesh(0).face_matrix()
-        area = 0
-        for faceInd in faces:
-            for vertInd in faces[faceInd]:
-                vert = vertices[vertInd]
-                area += Math.triangleArea(vert[0], vert[1], vert[2])
-        return area
-
-    def volume(self):
-        components, barycenter_cloud = self.getComponentsFaceList()
-        vertices = self.ms.mesh(0).vertex_matrix()
-        volume = 0
-        for compInd in range(len(components)):
-            faces = components[compInd]
-            for faceInd in faces:
-                for vertInd in faces[faceInd]:
-                    volume += Math.tetrahedronVolume(Math.vect(barycenter_cloud[compInd],vertices[vertInd][0]),
-                                           Math.vect(barycenter_cloud[compInd],vertices[vertInd][1]), Math.vect(barycenter_cloud[compInd],vertices[vertInd][2]))
-        return volume
-
-    #Returns list containing a list of face for each components
-    def getComponentsFaceList(self, debug=False):
-        self.ms.compute_color_by_conntected_component_per_face()
-        face_colors = self.mesh.face_color_matrix()
-        components = []
-        colors=[]
-        for face_i in range(len(face_colors)):
-            fcolor = face_colors[face_i]
-            find = False
-            for i in range(len(colors)):
-                color = colors[i]
-                if fcolor[0] == color[0] and fcolor[1] == color[1] and fcolor[2] == color[2]:
-                    components[i].append(face_i)
-                    find = True
-            if not find:
-                colors.append([fcolor[0], fcolor[1], fcolor[2]])
-                components.append([])
-                components[len(components)-1].append(face_i)
-        barycenter_cloud = []
-        for comp in components:
-            barycenter_cloud.append(self.barycenter(comp))
-        if debug :
-            ps.init()
-            ps_cloud = ps.register_point_cloud("Component barycenter", np.array(barycenter_cloud), color=[1, 0, 0])
-            ps_cloud.set_radius(0.01)
-            ps.register_surface_mesh("my mesh", self.ms.mesh(0).vertex_matrix(), self.ms.mesh(0).face_matrix(), transparency=0.6)
-            ps.show()
-        return components, barycenter_cloud
-
-    def barycenter(self, faceList):
-        sumX=0; sumY=0; sumZ=0; total=0
-        vertexMat = self.mesh.vertex_matrix()
-        faceMat = self.mesh.face_matrix()
-        for faceInd in faceList:
-            for vertInd in faceMat[faceInd]:
-                sumX += vertexMat[vertInd][0]
-                sumY += vertexMat[vertInd][1]
-                sumZ += vertexMat[vertInd][2]
-                total += 1
-        return [sumX/total, sumY/total, sumZ/total]
-
-    # ---------------------------------------------------------------------------------------------- #
-    # ---------------------------------------- I/O features ---------------------------------------- #
-    # ---------------------------------------------------------------------------------------------- #
+# ---------------------------------------------------------------------------------------------- #
+# ---------------------------------------- I/O features ---------------------------------------- #
+# ---------------------------------------------------------------------------------------------- #
     def printProperties(self):
         stats = self.dataFilter()
         debugLog(
@@ -253,9 +139,9 @@ class Mesh:
         ps.show()
 
 
-    def saveMesh(self):
+    def saveMesh(self, originalPath='./remesh'):
         # Same path with output instead of Model
-        newPath = os.path.join('./output',os.path.relpath(self.meshPath,'./remesh'))
+        newPath = os.path.join('./output',os.path.relpath(self.meshPath,originalPath))
 
         #Create parent dir if it doesn't exist
         os.makedirs(os.path.dirname(newPath), exist_ok=True)
@@ -271,20 +157,6 @@ class Mesh:
         ps.register_surface_mesh("my mesh", self.ms.mesh(0).vertex_matrix(), self.ms.mesh(0).face_matrix())
         ps.show()
 
-    def silhouetteExport(self):
-        os.makedirs('./screenshot', exist_ok=True)
-        fileName = os.path.splitext(os.path.basename(self.meshPath))[0]
-        ps.init()
-        ps.set_ground_plane_mode("none")
-        ps.register_surface_mesh("my mesh", self.ms.mesh(0).vertex_matrix(), self.ms.mesh(0).face_matrix(), material='flat',color=[0,0,0])
-        ps.set_view_projection_mode("orthographic")
-        ps.set_screenshot_extension(".jpg");
-        ps.set_up_dir("x_up")
-        ps.screenshot('./screenshot/'+fileName+'_x.jpg', False)
-        ps.set_up_dir("y_up")
-        ps.screenshot('./screenshot/'+fileName+'_y.jpg', False)
-        ps.set_up_dir("z_up")
-        ps.screenshot('./screenshot/'+fileName+'_z.jpg', False)
 
     def screenshot(self,saveTo, camLocation="diagonal"):
         os.makedirs('./screenshot', exist_ok=True)

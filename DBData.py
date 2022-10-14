@@ -2,78 +2,70 @@ import csv
 import os
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
+from Features import FeaturesExtract
 from parse import getFieldList, getIndexList
 from Mesh import Mesh
 from dataName import dataName, dataDimension
 from DebugLog import debugLvl, debugLog
+import numpy as np
 
 
-class DBData:
-    def __init__(self,outputDir):
-        self.pctPath = "./"+outputDir+"/PRINCETON"
-        self.lblPath = "./"+outputDir+"/LabeledDB"
-        self.outputDir = outputDir
-        self.dictList = []
 
-    def exportData(self):
-        meshesData1 = []
-        for dir in os.scandir(self.lblPath):
-            if os.path.isdir(dir):
-                FileIt = os.scandir(os.path.join(self.lblPath, dir.name))
-                for file in FileIt:
-                    fileType = os.path.splitext(os.path.realpath(file))[1]
-                    if fileType == ".obj" or fileType == ".off" or fileType == ".ply":
-                        mesh = Mesh(os.path.realpath(file))
-                        data = mesh.dataFilter()
-                        meshesData1.append(data)
-                FileIt.close()
-        self.csvExport('dataLabeledDB.csv', meshesData1)
+def plot(outputDir, dictList, featuresList, n_bins=20, size_x=10, size_y=7):
+    for feature in featuresList:
+        dataVisualisation(getFieldList(feature, dictList), feature, outputDir, n_bins, size_x, size_y)
 
-        meshesData2 = []
-        for dir in os.scandir(self.pctPath):
-            if os.path.isdir(dir):
-                FileIt = os.scandir(os.path.join(self.pctPath, dir.name))
-                for file in FileIt:
-                    fileType = os.path.splitext(os.path.realpath(file))[1]
-                    if fileType == ".obj" or fileType == ".off" or fileType == ".ply":
-                        mesh = Mesh(os.path.realpath(file))
-                        data = mesh.dataFilter()
-                        meshesData2.append(data)
-                FileIt.close()
-        self.csvExport('dataPriceton.csv', meshesData2)
-        self.dictList = meshesData1 + meshesData2
+def plot3D(outputDir, dictList, featuresList):
+    for feature in featuresList:
+        if dataName.PCA.value == feature:
+            mainComponentPCA = getIndexList(0, getFieldList(feature, dictList))
+            XYZdataVisualisation(mainComponentPCA, feature, outputDir)
+        else :
+            XYZdataVisualisation(getFieldList(feature, dictList), feature, outputDir)
 
-    def csvExport(self, fileName, data):
-        filePath = os.path.join(os.path.realpath("./"+self.outputDir),fileName)
-        os.makedirs(os.path.dirname(filePath), exist_ok=True)
-        file = open(filePath, "w")
-        csvDictWriter = csv.DictWriter(file, fieldnames=data[0].keys())
-        csvDictWriter.writeheader()
-        csvDictWriter.writerows(data)
+def histograms(outputDir, features):
+    dictList = exportDBData()
+    if dataName.CATEGORY in features :
+        plot([dataName.CATEGORY.value], 26, 25, 10)
+    oneD = [f.value for f in features if dataDimension[f] == 1 and f != dataName.CATEGORY]
+    threeD = [f.value for f in features if dataDimension[f] == 3]
+    if len(threeD) != 0: plot3D(outputDir, dictList, threeD)
+    if len(oneD) != 0: plot(outputDir, dictList, oneD)
 
-    def plot(self, featuresList, n_bins=20, size_x=10, size_y=7):
-        for feature in featuresList:
-            dataVisualisation(getFieldList(feature, self.dictList), feature, self.outputDir, n_bins, size_x, size_y)
+def exportDBData(outputDir):
+    dirs = [
+        "./"+outputDir+"/PRINCETON",
+        "./"+outputDir+"/LabeledDB"
+    ]
+    acc = []
+    for dir in dirs:
+        acc += exportDirData(dir)
+    return acc
+def exportDirData(dbDir):
+    meshesData = []
+    for dir in os.scandir(dbDir):
+        if os.path.isdir(dir):
+            FileIt = os.scandir(os.path.join(dbDir, dir.name))
+            for file in FileIt:
+                fileType = os.path.splitext(os.path.realpath(file))[1]
+                if fileType == ".obj" or fileType == ".off" or fileType == ".ply":
+                    mesh = Mesh(os.path.realpath(file))
+                    data = mesh.dataFilter()
+                    meshesData.append(data)
+            FileIt.close()
+    csvExport('data'+dbDir+'.csv', meshesData)
+    return meshesData
 
-    def plot3D(self, featuresList):
-        for feature in featuresList:
-            if dataName.PCA.value == feature:
-                mainComponentPCA = getIndexList(0, getFieldList(feature, self.dictList))
-                XYZdataVisualisation(mainComponentPCA, feature, self.outputDir)
-            else :
-                XYZdataVisualisation(getFieldList(feature, self.dictList), feature, self.outputDir)
+def csvExport(outputDir, fileName, data):
+    filePath = os.path.join(os.path.realpath("./"+outputDir),fileName)
+    os.makedirs(os.path.dirname(filePath), exist_ok=True)
+    file = open(filePath, "w")
+    csvDictWriter = csv.DictWriter(file, fieldnames=data[0].keys())
+    csvDictWriter.writeheader()
+    csvDictWriter.writerows(data)
 
-    def histograms(self, features):
-        self.exportData()
-        if dataName.CATEGORY in features :
-            self.plot([dataName.CATEGORY.value], 26, 25, 10)
-        oneD = [f.value for f in features if dataDimension[f] == 1 and f != dataName.CATEGORY]
-        threeD = [f.value for f in features if dataDimension[f] == 3]
-        if len(threeD) != 0: self.plot3D(threeD)
-        if len(oneD) != 0: self.plot(oneD)
 
 def normalization():
-    totalMesh = 0
     dirs = [
         "./remesh/PRINCETON",
         "./remesh/LabeledDB"
@@ -88,7 +80,6 @@ def normalise(dbDir):
             for file in FileIt:
                 fileType = os.path.splitext(os.path.realpath(file))[1]
                 if fileType == ".obj" or fileType == ".off" or fileType == ".ply":
-                    totalMesh += 1
                     mesh = Mesh(os.path.realpath(file))
                     mesh.resample()
                     mesh.saveMesh()
@@ -121,6 +112,49 @@ def XYZdataVisualisation(list, feature, outputDir,size_x=10, size_y=7):
     plt.legend()
     plt.savefig("./" + outputDir + "/" + feature.lower() + '.png')
 
+def drawHistogram(path, funcName):
+    FileIt = os.scandir(path)
+    acc = []
+    for file in FileIt:
+        fileType = os.path.splitext(os.path.realpath(file))[1]
+        if fileType == ".obj" or fileType == ".off" or fileType == ".ply":
+            features = FeaturesExtract(os.path.realpath(file))
+            res = features.call(funcName)
+            acc.append(res)
+    FileIt.close()
+    res=[]
+    for objVal in acc:
+        y, binEdges = np.histogram(objVal, bins=50)
+        x = 0.5 * (binEdges[1:] + binEdges[:-1])
+        res.append([x, y])
+    return [res,path]
+
+def drawFeatures(dbDir, funcName):
+    dbValue = []
+    nbCat=0
+    for dir in os.scandir(dbDir):
+        if os.path.isdir(dir):
+            catVal=drawHistogram(os.path.join(dbDir, dir.name),funcName)
+            dbValue.append(catVal)
+            nbCat += 1
+    nbOfLine = (nbCat // 3)
+    if nbCat % 3 > 0: nbOfLine += 1
+    fig, axs = plt.subplots(nbOfLine, 3, figsize=(25, 35))
+    i=0
+    for catValue in dbValue:
+        values = catValue[0]
+        catName = catValue[1]
+        for objvalue in values:
+            axs[i//3, i%3].plot(objvalue[0], objvalue[1])
+        axs[i//3, i%3].set_title(str(os.path.relpath(catName, dbDir)))
+        i+=1
+    plt.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=0.95, wspace=0.2, hspace=0.3)
+    plt.savefig("./output/"+funcName+".jpg")
+
+def exportCategoryFeatures(dbDir):
+    functionsName = ['A3', 'D1', 'D2', 'D3', 'D4']
+    for funcName in functionsName:
+        drawFeatures(dbDir, funcName)
 
 def normCategory(path):
     totalMesh = 0
@@ -175,5 +209,4 @@ def viewCategory(path, camPos="diagonal", absolutePath=False, debug=False):
 
 
 def plot(folder):
-    dataIO = DBData(folder)
-    dataIO.histograms([dataName.VERTEX_NUMBERS, dataName.SIDE_SIZE, dataName.DIST_BARYCENTER])
+    histograms(folder, [dataName.VERTEX_NUMBERS, dataName.SIDE_SIZE, dataName.DIST_BARYCENTER])
