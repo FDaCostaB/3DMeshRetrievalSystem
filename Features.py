@@ -3,6 +3,7 @@ import os.path
 import pymeshlab
 import polyscope as ps
 import numpy as np
+from math import pi
 import Math
 from featureName import featureName, featureDimension
 from DebugLog import debugLog, debugLvl
@@ -162,6 +163,8 @@ class FeaturesExtract:
             return Math.length(self.centroid())
         elif funcName==featureName.RECTANGULARITY.value:
             return self.rectangularity()
+        elif funcName==featureName.COMPACTNESS.value:
+            return self.compactness()
 
     # Returns list containing a list of face for each component
     def getComponentsFaceList(self, debug=False):
@@ -227,7 +230,7 @@ class FeaturesExtract:
     def compactness(self):
         area = self.surfaceArea()
         volume = self.volume()
-        c = (area ** 3 / (36 * Math.pi * volume ** 2))
+        c = (area ** 3 / (36 * pi * volume ** 2))
         return c
 
 # ---------------------------------------------------------------------------------------------- #
