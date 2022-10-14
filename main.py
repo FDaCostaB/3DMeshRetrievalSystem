@@ -10,7 +10,7 @@ if len(sys.argv) == 1:
     db.plot('remesh')
     db.plot('output')
 elif len(sys.argv) == 2:
-    db.drawCategoryFeatures(sys.argv[1], [featureName.RECTANGULARITY.value])
+    db.drawCategoryFeatures(sys.argv[1], [featureName.DIAMETER.value])
     # feature = FeaturesExtract(sys.argv[1])
     # feature.showBoundingBox()
 

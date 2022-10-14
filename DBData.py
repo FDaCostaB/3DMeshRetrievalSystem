@@ -12,7 +12,6 @@ from DebugLog import debugLvl, debugLog
 import numpy as np
 
 
-
 def plot(outputDir, dictList, featuresList, n_bins=20, size_x=10, size_y=7):
     for feature in featuresList:
         dataVisualisation(getFieldList(feature, dictList), feature, outputDir, n_bins, size_x, size_y)
@@ -125,6 +124,7 @@ def exportFeatures(dbDir, funcName):
             if featureDimension[funcName]==1: dbScalarValue.append(catVal)
             elif featureDimension[funcName]==2: dbHistValue.append(catVal)
             nbCat += 1
+            print(dir.name)
     return dbScalarValue, dbHistValue, nbCat
 
 

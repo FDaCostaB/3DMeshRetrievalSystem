@@ -165,6 +165,8 @@ class FeaturesExtract:
             return self.rectangularity()
         elif funcName==featureName.COMPACTNESS.value:
             return self.compactness()
+        elif funcName==featureName.DIAMETER.value:
+            return self.diameter()
 
     # Returns list containing a list of face for each component
     def getComponentsFaceList(self, debug=False):
@@ -237,6 +239,18 @@ class FeaturesExtract:
     def sphericity(self):
         return 1/self.compactness()
 
+    def diameter(self):
+        self.ms.generate_convex_hull()
+        vertexMat = self.ms.current_mesh().vertex_matrix()
+        diameter = 0
+        for u in vertexMat:
+            for v in vertexMat:
+                dist = Math.dist(u,v)
+                if dist > diameter:
+                    diameter = dist
+        self.ms.set_current_mesh(0)
+        return diameter
+
     def boundingBox(self):
         min = self.mesh.bounding_box().min()
         max = self.mesh.bounding_box().max()
@@ -244,6 +258,7 @@ class FeaturesExtract:
                  [max[0],min[1],min[2]], [max[0],min[1],max[2]], [max[0],max[1],min[2]], [max[0],max[1],max[2]]]
         faces = [[0, 1, 2], [0,2,3], [0,3,4], [3, 4, 5], [1, 2, 6], [2, 6, 7], [2, 3, 5], [2, 5, 7], [0, 1, 4], [1, 4, 6], [4, 5, 6], [5, 6, 7]]
         return vertex, faces
+
 # ---------------------------------------------------------------------------------------------- #
 # ---------------------------------------- I/O features ---------------------------------------- #
 # ---------------------------------------------------------------------------------------------- #
