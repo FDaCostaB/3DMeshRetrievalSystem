@@ -10,7 +10,7 @@ if len(sys.argv) == 1:
     db.plot('remesh')
     db.plot('output')
 elif len(sys.argv) == 2:
-    db.drawCategoryFeatures(sys.argv[1], [featureName.VOLUME.value, featureName.SURFACE_AREA.value])
+    db.drawCategoryFeatures(sys.argv[1], [featureName.RECTANGULARITY.value])
     # ms = Mesh(sys.argv[1])
     # ms.resample()
     # ms.saveMesh("./initial")

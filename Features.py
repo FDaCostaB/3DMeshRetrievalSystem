@@ -20,10 +20,10 @@ class FeaturesExtract:
         else:
             raise Exception("Format not accepted")
 
-
 # ---------------------------------------------------------------------------------------------- #
 # ------------------------------------ Features computation ------------------------------------ #
 # ---------------------------------------------------------------------------------------------- #
+
     def A3(self, sampleNum=100000):
         vertices = self.ms.mesh(0).vertex_matrix()
         res = []
@@ -158,6 +158,10 @@ class FeaturesExtract:
             return self.surfaceArea()
         elif funcName==featureName.VOLUME.value:
             return self.volume()
+        elif funcName==featureName.CENTROID.value:
+            return Math.length(self.centroid())
+        elif funcName==featureName.RECTANGULARITY.value:
+            return self.rectangularity()
 
     # Returns list containing a list of face for each component
     def getComponentsFaceList(self, debug=False):
@@ -188,11 +192,27 @@ class FeaturesExtract:
             ps.show()
         return components, barycenter_cloud
 
+    def centroid(self):
+        vertexMat = self.mesh.vertex_matrix()
+        centroid = [0, 0, 0]
+        for vert in vertexMat:
+            centroid[0] += vert[0]
+            centroid[1] += vert[1]
+            centroid[2] += vert[2]
+        return [coord/len(vertexMat) for coord in centroid]
+
+    def volumeOBB(self):
+        min = self.mesh.bounding_box().min()
+        max = self.mesh.bounding_box().max()
+        return (max[0] - min[0]) * (max[1] - min[1]) * (max[2] - min[2])
+
+    def rectangularity(self):
+        return self.volume()/self.volumeOBB()
 
     def barycenter(self, faceList):
-        sumX = 0;
-        sumY = 0;
-        sumZ = 0;
+        sumX = 0
+        sumY = 0
+        sumZ = 0
         total = 0
         vertexMat = self.mesh.vertex_matrix()
         faceMat = self.mesh.face_matrix()
@@ -216,7 +236,7 @@ class FeaturesExtract:
         ps.register_surface_mesh("my mesh", self.ms.mesh(0).vertex_matrix(), self.ms.mesh(0).face_matrix(), material='flat',
                                  color=[0, 0, 0])
         ps.set_view_projection_mode("orthographic")
-        ps.set_screenshot_extension(".jpg");
+        ps.set_screenshot_extension(".jpg")
         ps.set_up_dir("x_up")
         ps.screenshot('./screenshot/' + fileName + '_x.jpg', False)
         ps.set_up_dir("y_up")
