@@ -198,6 +198,12 @@ class FeaturesExtract:
                 total += 1
         return [sumX / total, sumY / total, sumZ / total]
 
+    def compactness(self):
+        area = self.surfaceArea()
+        volume = self.volume()
+        c = (area ** 3 / (36 * Math.pi * volume ** 2))
+        return c
+
 # ---------------------------------------------------------------------------------------------- #
 # ---------------------------------------- I/O features ---------------------------------------- #
 # ---------------------------------------------------------------------------------------------- #

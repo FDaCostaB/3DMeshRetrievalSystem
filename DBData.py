@@ -152,7 +152,8 @@ def drawFeatures(dbDir, funcName):
     plt.savefig("./output/"+funcName+".jpg")
 
 def exportCategoryFeatures(dbDir):
-    functionsName = ['A3', 'D1', 'D2', 'D3', 'D4']
+    # functionsName = ['A3', 'D1', 'D2', 'D3', 'D4']
+    functionsName = ['compactness']
     for funcName in functionsName:
         drawFeatures(dbDir, funcName)
 
