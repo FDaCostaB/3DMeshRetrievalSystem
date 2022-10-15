@@ -167,6 +167,9 @@ class FeaturesExtract:
             return self.compactness()
         elif funcName==featureName.DIAMETER.value:
             return self.diameter()
+        elif funcName== featureName.ECCENTRICITY.value:
+            return self.eccentricity()
+        
 
     # Returns list containing a list of face for each component
     def getComponentsFaceList(self, debug=False):
@@ -258,6 +261,11 @@ class FeaturesExtract:
                  [max[0],min[1],min[2]], [max[0],min[1],max[2]], [max[0],max[1],min[2]], [max[0],max[1],max[2]]]
         faces = [[0, 1, 2], [0,2,3], [0,3,4], [3, 4, 5], [1, 2, 6], [2, 6, 7], [2, 3, 5], [2, 5, 7], [0, 1, 4], [1, 4, 6], [4, 5, 6], [5, 6, 7]]
         return vertex, faces
+
+    def eccentricity(self):
+        e1 = self.mesh.bounding_box().dim_x()
+        e3 = self.mesh.bounding_box().dim_z()
+        return e1/e3
 
 # ---------------------------------------------------------------------------------------------- #
 # ---------------------------------------- I/O features ---------------------------------------- #
