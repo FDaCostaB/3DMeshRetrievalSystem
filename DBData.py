@@ -1,5 +1,4 @@
 import numpy as np
-import csv
 import os
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
@@ -13,12 +12,9 @@ import numpy as np
 import pandas as pd
 
 # ---------------------------- STEP 2 ----------------------------------------#
-def plotData(outputDir, dictList, valueList, n_bins=20, size_x=10, size_y=7):
-    for value in valueList:
-        plotValue(getFieldList(value, dictList), value, outputDir, n_bins, size_x, size_y)
 
 def plotHistogram(outputDir, df, feature, n_bins=20, size_x=10, size_y=7):
-    dataVisualisation(df, feature, outputDir, n_bins, size_x, size_y)
+    plotValue(df, feature, outputDir, n_bins, size_x, size_y)
 
 def plot3D(outputDir, dictList, featuresList):
     for feature in featuresList:
@@ -29,7 +25,6 @@ def plot3D(outputDir, dictList, featuresList):
             XYZplotValue(getFieldList(feature, dictList), feature, outputDir)
 
 def histograms(feature):
-    # dictList = exportDBData()
     df = pd.read_csv(os.path.join(os.path.realpath("./output"),"statistics.csv"))
     outputDir = os.path.join(os.path.realpath("./output"),"histograms")
     os.makedirs(outputDir, exist_ok=True)
@@ -37,11 +32,6 @@ def histograms(feature):
 
 def exportDBData(outputDir):
     dbDir = "./"+outputDir+"/LabeledDB"
-    acc = []
-    for dir in dirs:
-        acc += exportDirData(dir)
-    return acc
-def exportDirData(dbDir):
     meshesData = []
     for dir in os.scandir(dbDir):
         if os.path.isdir(dir):
@@ -53,7 +43,7 @@ def exportDirData(dbDir):
                     data = mesh.dataFilter()
                     meshesData.append(data)
             FileIt.close()
-    csvExport("./output",'statistics.csv', meshesData)
+    csvExport("./output", 'statistics.csv', meshesData)
     return meshesData
 
 def csvExport(outputDir, fileName, data):
@@ -61,10 +51,6 @@ def csvExport(outputDir, fileName, data):
     os.makedirs(os.path.dirname(filePath), exist_ok=True)
     df = pd.DataFrame(data, columns=data[0].keys())
     df.to_csv(filePath,mode="w")
-    # file = open(filePath, "w")
-    # csvDictWriter = csv.DictWriter(file, fieldnames=data[0].keys())
-    # csvDictWriter.writeheader()
-    # csvDictWriter.writerows(data)
 
 
 def normalise(expectedVerts, eps):
@@ -73,7 +59,7 @@ def normalise(expectedVerts, eps):
         normCategory(os.path.realpath(dir), os.path.dirname(dbDir), expectedVerts, eps)
 
 
-def dataVisualisation(df, feature, outputDir, n_bins=20, size_x=10, size_y=7):
+def plotValue(df, feature, outputDir, n_bins=20, size_x=10, size_y=7):
     fig, axs = plt.subplots(1, 1, figsize=(size_x, size_y), tight_layout=True)
 
     plt.xlabel(feature)
@@ -83,8 +69,8 @@ def dataVisualisation(df, feature, outputDir, n_bins=20, size_x=10, size_y=7):
     if feature == dataName.SIDE_SIZE.value and outputDir=='output': n_bins = [0+i*0.1 for i in range(21)]
     if feature == dataName.FACE_NUMBERS.value and outputDir=='output': n_bins = [9000+i*100 for i in range(21)]
     if feature == dataName.VERTEX_NUMBERS.value and outputDir=='output': n_bins = [4900+i*10 for i in range(21)]
-    axs.hist(list, bins=n_bins)
-    plt.savefig("./" + outputDir + "/" + feature.lower() + '.png')
+    axs.hist(df[feature], bins=n_bins)
+    plt.savefig(outputDir+ "\\" +feature.lower()+".png")
 
 
 def XYZplotValue(list, feature, outputDir,size_x=10, size_y=7):
@@ -120,7 +106,7 @@ def viewCategory(path, camPos="diagonal", absolutePath=False, debug=False):
     if absolutePath :
         outPath = path
     else :
-        outPath = os.path.join('./output', os.path.relpath(path, './remesh'))
+        outPath = os.path.join('./output', os.path.relpath(path, './initial'))
     os.makedirs(os.path.join(os.path.realpath(outPath),'screenshot'), exist_ok=True)
     if os.path.isdir(path):
         FileIt = os.scandir(outPath)

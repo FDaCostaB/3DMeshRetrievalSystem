@@ -5,42 +5,34 @@ import os
 from Features import FeaturesExtract
 from Mesh import Mesh
 
-def step3View():
-    db.normalise(5000, 100)
-    for dir in os.scandir('output/LabeledDB'):
-        if os.path.isdir(dir):
-            db.viewCategory(os.path.realpath(dir), debug=True)
+def step3FullNormalization():
+    db.normCategory('output/LabeledDB/Airplane')
+    db.viewCategory('output/LabeledDB/Airplane', debug=True)
+    # for dir in os.scandir('output/LabeledDB'):
+    #    if os.path.isdir(dir):
+    #        db.viewCategory(os.path.realpath(dir), debug=True)
 
 def step2():
     db.normalise(5000, 100)
     db.extractData('initial')
     db.extractData('output')
 
-if len(sys.argv) == 1:
-    db.normalization()
-    db.plotHistogram('remesh')
-    db.plotHistogram('output')
-elif len(sys.argv) == 2:
-    db.drawCategoryFeatures(sys.argv[1], [featureName.COMPACTNESS.value])
-    # feature = FeaturesExtract(sys.argv[1])
-    # feature.showBoundingBox()
-
-    # ms = Mesh(sys.argv[1])
-    # feature = FeaturesExtract(sys.argv[1])
-    # print(feature.surfaceArea())
-
-    # ms = Mesh(sys.argv[1])
-    # ms.resample()
-    # ms.saveMesh()
-    # ms.render()
-
-elif len(sys.argv) == 3:
+if len(sys.argv) == 3:
     if sys.argv[1] == "analyze":
         m = Mesh(sys.argv[2])
         print(m.dataFilter())
 
     if sys.argv[1] == "statistics":
-        db.exportDirData(sys.argv[2])
+        db.exportDBData(sys.argv[2])
 
     if sys.argv[1] == "histograms":
         db.histograms(sys.argv[2])
+
+    if sys.argv[1] == "full-normalisation":
+        for dir in os.scandir('output/LabeledDB'):
+            if os.path.isdir(dir):
+                db.viewCategory(os.path.realpath(dir), debug=True)
+
+    if sys.argv[1] == "category-normalisation":
+        db.normCategory('initial/LabeledDB/'+sys.argv[2],'initial', 5000, 100)
+        db.viewCategory('initial/LabeledDB/'+sys.argv[2], debug=True)

@@ -130,9 +130,10 @@ class Mesh:
         self.principalAxisAlignement()
         # self.flipMomentTest()
         stats = self.dataFilter()
-        self.ms.compute_matrix_from_scaling_or_normalization(axisx=1 / stats[dataName.SIDE_SIZE.value],
-                                                             customcenter=stats[dataName.BARYCENTER.value],
-                                                             uniformflag=True)
+        #self.ms.compute_matrix_from_scaling_or_normalization(axisx=1 / stats[dataName.SIDE_SIZE.value],
+        #                                                     customcenter=stats[dataName.BARYCENTER.value],
+        #                                                     uniformflag=True)
+
         if showComparison:
             self.printProperties()
             self.compare()
