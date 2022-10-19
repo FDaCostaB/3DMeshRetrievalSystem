@@ -6,11 +6,11 @@ from Features import FeaturesExtract
 from Mesh import Mesh
 
 if len(sys.argv) == 1:
-    # db.normalise()
+    db.normalization()
     db.plot('remesh')
     db.plot('output')
 elif len(sys.argv) == 2:
-    db.drawCategoryFeatures(sys.argv[1], [featureName.ECCENTRICITY.value])
+    db.drawCategoryFeatures(sys.argv[1], [featureName.COMPACTNESS.value])
     # feature = FeaturesExtract(sys.argv[1])
     # feature.showBoundingBox()
 
@@ -22,3 +22,8 @@ elif len(sys.argv) == 2:
     # ms.resample()
     # ms.saveMesh()
     # ms.render()
+
+elif len(sys.argv) == 3:
+    if sys.argv[1] == "analyze":
+        m = Mesh(sys.argv[2])
+        print(m.dataFilter())
