@@ -13,9 +13,8 @@ import numpy as np
 import pandas as pd
 
 
-def plot(outputDir, dictList, featuresList, n_bins=20, size_x=10, size_y=7):
-    for feature in featuresList:
-        dataVisualisation(getFieldList(feature, dictList), feature, outputDir, n_bins, size_x, size_y)
+def plotHistogram(outputDir, df, feature, n_bins=20, size_x=10, size_y=7):
+    dataVisualisation(df, feature, outputDir, n_bins, size_x, size_y)
 
 def plot3D(outputDir, dictList, featuresList):
     for feature in featuresList:
@@ -25,14 +24,12 @@ def plot3D(outputDir, dictList, featuresList):
         else :
             XYZdataVisualisation(getFieldList(feature, dictList), feature, outputDir)
 
-def histograms(outputDir, features):
-    dictList = exportDBData()
-    if dataName.CATEGORY in features :
-        plot([dataName.CATEGORY.value], 26, 25, 10)
-    oneD = [f.value for f in features if dataDimension[f] == 1 and f != dataName.CATEGORY]
-    threeD = [f.value for f in features if dataDimension[f] == 3]
-    if len(threeD) != 0: plot3D(outputDir, dictList, threeD)
-    if len(oneD) != 0: plot(outputDir, dictList, oneD)
+def histograms(feature):
+    # dictList = exportDBData()
+    df = pd.read_csv(os.path.join(os.path.realpath("./output"),"statistics.csv"))
+    outputDir = os.path.join(os.path.realpath("./output"),"histograms")
+    os.makedirs(outputDir, exist_ok=True)
+    plotHistogram(outputDir, df, feature, 19)
 
 def exportDBData(outputDir):
     dirs = [
@@ -89,7 +86,7 @@ def normalise(dbDir):
                     mesh.saveMesh()
             FileIt.close()
 
-def dataVisualisation(list, feature, outputDir, n_bins=20, size_x=10, size_y=7):
+def dataVisualisation(df, feature, outputDir, n_bins=20, size_x=10, size_y=7):
     fig, axs = plt.subplots(1, 1, figsize=(size_x, size_y), tight_layout=True)
 
     plt.xlabel(feature)
@@ -97,8 +94,9 @@ def dataVisualisation(list, feature, outputDir, n_bins=20, size_x=10, size_y=7):
     if(feature == dataName.SIDE_SIZE.value and outputDir=='output') : n_bins = [0.99+i*0.001 for i in range(21)]
     if(feature == dataName.DIST_BARYCENTER.value and outputDir=='output') : n_bins = [0+i*0.0001 for i in range(11)]
     if(feature == dataName.SIDE_SIZE.value and outputDir=='remesh') :n_bins = [0+i*0.1 for i in range(21)]
-    axs.hist(list, bins=n_bins)
-    plt.savefig("./" + outputDir + "/" + feature.lower() + '.png')
+    axs.hist(df[feature], bins=n_bins)
+    # plt.savefig("./" + outputDir + "/" + feature.lower() + '.png')
+    plt.savefig(outputDir+ "\\" +feature.lower()+".png")
 
 
 def XYZdataVisualisation(list, feature, outputDir,size_x=10, size_y=7):
@@ -255,7 +253,3 @@ def viewCategory(path, camPos="diagonal", absolutePath=False, debug=False):
     plt.savefig(outPath + "/meshes_overview.jpg")
     if(debug):
         plt.show()
-
-
-def plot(folder):
-    histograms(folder, [dataName.VERTEX_NUMBERS, dataName.SIDE_SIZE, dataName.DIST_BARYCENTER])

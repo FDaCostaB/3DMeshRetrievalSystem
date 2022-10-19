@@ -7,8 +7,8 @@ from Mesh import Mesh
 
 if len(sys.argv) == 1:
     db.normalization()
-    db.plot('remesh')
-    db.plot('output')
+    db.plotHistogram('remesh')
+    db.plotHistogram('output')
 elif len(sys.argv) == 2:
     db.drawCategoryFeatures(sys.argv[1], [featureName.COMPACTNESS.value])
     # feature = FeaturesExtract(sys.argv[1])
@@ -30,3 +30,6 @@ elif len(sys.argv) == 3:
 
     if sys.argv[1] == "statistics":
         db.exportDirData(sys.argv[2])
+
+    if sys.argv[1] == "histograms":
+        db.histograms(sys.argv[2])
