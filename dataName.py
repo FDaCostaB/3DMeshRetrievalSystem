@@ -14,6 +14,7 @@ class dataName(Enum):
     COMPONENTS_NUMBER = "Components number"
 
 
-dataDimension = { dataName.CATEGORY: 1, dataName.FACE_NUMBERS : 1, dataName.VERTEX_NUMBERS : 1, dataName.SIDE_SIZE : 1,
-                 dataName.MOMENT : 3, dataName.SIZE : 3, dataName.BARYCENTER : 3, dataName.DIST_BARYCENTER : 1, dataName.PCA : 3,
-                  dataName.DIAGONAL : 1, dataName.COMPONENTS_NUMBER : 1 }
+dataDimension = { dataName.CATEGORY.value: 1, dataName.FACE_NUMBERS.value : 1, dataName.VERTEX_NUMBERS.value : 1,
+                  dataName.SIDE_SIZE.value : 1, dataName.MOMENT.value : 3, dataName.SIZE.value : 3,
+                  dataName.BARYCENTER.value : 3, dataName.DIST_BARYCENTER.value : 1, dataName.PCA.value : 3,
+                  dataName.DIAGONAL.value : 1, dataName.COMPONENTS_NUMBER.value : 1 }

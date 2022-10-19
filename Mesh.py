@@ -5,6 +5,7 @@ import polyscope as ps
 import numpy as np
 from dataName import dataName
 from DebugLog import debugLvl, debugLog
+from parse import getFieldList, getIndexList
 import polyscopeUI as psUI
 import Math
 
@@ -29,10 +30,11 @@ class Mesh:
         for face in self.mesh.polygonal_face_list():
             if len(face)==4 : print("--------------------------------------Quads found--------------------------------------")
         out_dict = self.ms.get_geometric_measures()
+        eigenvalues, eigenvectors = self.getPCA()
         size = [ self.mesh.bounding_box().dim_x(), self.mesh.bounding_box().dim_y(), self.mesh.bounding_box().dim_z()]
         res = {dataName.CATEGORY.value : category, dataName.FACE_NUMBERS.value : self.mesh.face_number(), dataName.VERTEX_NUMBERS.value : self.mesh.vertex_number(),
                dataName.SIDE_SIZE.value : max(size), dataName.MOMENT.value : self.momentOrder(), dataName.SIZE.value : size, dataName.BARYCENTER.value : out_dict['barycenter'],
-               dataName.DIST_BARYCENTER.value : Math.length(out_dict['barycenter']),dataName.PCA.value :list(out_dict['pca']),
+               dataName.DIST_BARYCENTER.value : Math.length(out_dict['barycenter']), dataName.PCA.value : eigenvectors, "Eigenvalues" : eigenvalues, "Eigenvectors" :eigenvectors,
                dataName.DIAGONAL.value : self.mesh.bounding_box().diagonal(), dataName.COMPONENTS_NUMBER.value : self.getNbComponents() }
         return res
 
@@ -128,11 +130,11 @@ class Mesh:
                                            axisy=-1 * stats[dataName.BARYCENTER.value][1],
                                            axisz=-1 * stats[dataName.BARYCENTER.value][2])
         self.principalAxisAlignement()
-        # self.flipMomentTest()
+        self.flipMomentTest()
         stats = self.dataFilter()
-        #self.ms.compute_matrix_from_scaling_or_normalization(axisx=1 / stats[dataName.SIDE_SIZE.value],
-        #                                                     customcenter=stats[dataName.BARYCENTER.value],
-        #                                                     uniformflag=True)
+        self.ms.compute_matrix_from_scaling_or_normalization(axisx=1 / stats[dataName.SIDE_SIZE.value],
+                                                             customcenter=stats[dataName.BARYCENTER.value],
+                                                             uniformflag=True)
 
         if showComparison:
             self.printProperties()
@@ -164,6 +166,30 @@ class Mesh:
             if len(colors) == 0 or not found:
                 colors.append(fcolor)
         return len(colors)
+
+    def getPCA(self):
+
+        vertexMat = self.mesh.vertex_matrix()
+        V = np.zeros((3, len(vertexMat)))
+        V[0] = getIndexList(0,vertexMat)
+        V[1] = getIndexList(1,vertexMat)
+        V[2] = getIndexList(2,vertexMat)
+
+        V_cov = np.cov(V)
+        eigenvalues, eigenvectors = np.linalg.eig(V_cov)
+        res=[getIndexList(0,eigenvectors),getIndexList(1,eigenvectors), getIndexList(2,eigenvectors)]
+
+        for i in range (3):
+            for j in range(i+1,3):
+                if(eigenvalues[j]>eigenvalues[i]):
+                   temp=res[i].copy()
+                   res[i] = res[j]
+                   res[j] = temp
+                   temp=eigenvalues[i]
+                   eigenvalues[i] = eigenvalues[j]
+                   eigenvalues[j] = temp
+
+        return eigenvalues, [res[0],res[1],Math.crossProduct(res[0],res[1])]
 # ---------------------------------------------------------------------------------------------- #
 # ---------------------------------------- I/O features ---------------------------------------- #
 # ---------------------------------------------------------------------------------------------- #

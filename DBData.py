@@ -2,6 +2,8 @@ import numpy as np
 import os
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
+
+import Math
 from Features import FeaturesExtract
 from parse import getFieldList, getIndexList
 from Mesh import Mesh
@@ -14,15 +16,31 @@ import pandas as pd
 # ---------------------------- STEP 2 ----------------------------------------#
 
 def plotHistogram(outputDir, df, feature, n_bins=20, size_x=10, size_y=7):
-    plotValue(df, feature, outputDir, n_bins, size_x, size_y)
-
-def plot3D(outputDir, dictList, featuresList):
-    for feature in featuresList:
-        if dataName.PCA.value == feature:
-            mainComponentPCA = getIndexList(0, getFieldList(feature, dictList))
-            XYZplotValue(mainComponentPCA, feature, outputDir)
-        else :
-            XYZplotValue(getFieldList(feature, dictList), feature, outputDir)
+    if feature == dataName.PCA.value:
+        parsedValues = []
+        pca = []
+        stringPCA = df[dataName.PCA.value].values
+        for eigenvectors in stringPCA:
+            parsedValues.append(eigenvectors.strip('][').split(', '))
+        for vector in parsedValues:
+            curr=[]
+            vect=[]
+            for coordinate in vector:
+                if(coordinate[0]=='['):
+                    coordinate = float(coordinate[1:])
+                elif (coordinate[len(coordinate)-1] == ']'):
+                    coordinate = float(coordinate[:-1])
+                vect.append(float(coordinate))
+                if(len(vect)==3):
+                    curr.append(vect)
+                    vect = []
+                if(len(curr)==3):
+                    pca.append(curr)
+                    curr = []
+        alignementVal = [[abs(Math.dotProduct(eigenvectors[0],[1,0,0])), abs(Math.dotProduct(eigenvectors[1],[0,1,0])),abs(Math.dotProduct(eigenvectors[2],[0,0,1]))] for eigenvectors in pca]
+        XYZplotValue(alignementVal,feature,outputDir)
+    else:
+        plotValue(df, feature, outputDir, n_bins, size_x, size_y)
 
 def histograms(feature):
     df = pd.read_csv(os.path.join(os.path.realpath("./output"),"statistics.csv"))
@@ -56,26 +74,26 @@ def csvExport(outputDir, fileName, data):
 def normalise(expectedVerts, eps):
     dbDir = "./initial/LabeledDB"
     for dir in os.scandir(dbDir):
+        print(os.path.realpath(dir))
         normCategory(os.path.realpath(dir), os.path.dirname(dbDir), expectedVerts, eps)
 
 
 def plotValue(df, feature, outputDir, n_bins=20, size_x=10, size_y=7):
     fig, axs = plt.subplots(1, 1, figsize=(size_x, size_y), tight_layout=True)
-
     plt.xlabel(feature)
     plt.ylabel("Number of mesh(es)")
-    if feature == dataName.SIDE_SIZE.value and outputDir=='output': n_bins = [0.99+i*0.001 for i in range(21)]
-    if feature == dataName.DIST_BARYCENTER.value and outputDir=='output': n_bins = [0+i*0.0001 for i in range(11)]
-    if feature == dataName.SIDE_SIZE.value and outputDir=='output': n_bins = [0+i*0.1 for i in range(21)]
-    if feature == dataName.FACE_NUMBERS.value and outputDir=='output': n_bins = [9000+i*100 for i in range(21)]
-    if feature == dataName.VERTEX_NUMBERS.value and outputDir=='output': n_bins = [4900+i*10 for i in range(21)]
+    if feature == dataName.SIDE_SIZE.value and outputDir==os.path.realpath('output/histograms'): n_bins = [0.99+i*0.001 for i in range(21)]
+    if feature == dataName.DIST_BARYCENTER.value and outputDir==os.path.realpath('output/histograms'): n_bins = [0+i*0.0001 for i in range(11)]
+    if feature == dataName.SIDE_SIZE.value and outputDir==os.path.realpath('output/histograms'): n_bins = [0+i*0.1 for i in range(21)]
+    if feature == dataName.FACE_NUMBERS.value and outputDir==os.path.realpath('output/histograms'): n_bins = [9000+i*100 for i in range(21)]
+    if feature == dataName.VERTEX_NUMBERS.value and outputDir==os.path.realpath('output/histograms'): n_bins = [4900+i*10 for i in range(21)]
     axs.hist(df[feature], bins=n_bins)
     plt.savefig(outputDir+ "\\" +feature.lower()+".png")
 
 
 def XYZplotValue(list, feature, outputDir,size_x=10, size_y=7):
     fig, axs = plt.subplots(1,1,figsize=(size_x, size_y), tight_layout=True)
-    data = [getIndexList(0, list, feature == dataName.PCA.value), getIndexList(1, list, feature == dataName.PCA.value), getIndexList(2, list, feature == dataName.PCA.value)]
+    data = [getIndexList(0, list), getIndexList(1, list), getIndexList(2, list)]
     colors = ['blue', 'red', 'yellow']
     labels = ['x', 'y', 'z']
     minVal = min(data[0] + data[1] + data[2])
@@ -86,7 +104,7 @@ def XYZplotValue(list, feature, outputDir,size_x=10, size_y=7):
     plt.xlabel(feature)
     plt.ylabel('count')
     plt.legend()
-    plt.savefig("./" + outputDir + "/" + feature.lower() + '.png')
+    plt.savefig(outputDir+ "\\" +feature.lower()+".png")
 
 
 def normCategory(path, sourceDir, expectedVerts, eps):
@@ -137,10 +155,6 @@ def viewCategory(path, camPos="diagonal", absolutePath=False, debug=False):
     plt.savefig(outPath + "/meshes_overview.jpg")
     if(debug):
         plt.show()
-
-
-def extractData(folder):
-    histograms(folder, [dataName.FACE_NUMBERS, dataName.VERTEX_NUMBERS])
 
 # ---------------------------- STEP 3 ----------------------------------------#
 def exportFeatures(dbDir, funcName):

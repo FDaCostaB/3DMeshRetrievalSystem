@@ -4,8 +4,5 @@ def getFieldList(field,dictList):
 
 
 # From a List of List (listList) retrieve a list of the i-th element of each List
-def getIndexList(i,listList, doAbs=False):
-    if doAbs:
-        return [abs(list[i]) for list in listList]
-    else :
-        return [list[i] for list in listList]
+def getIndexList(i,listList):
+    return [list[i] for list in listList]
