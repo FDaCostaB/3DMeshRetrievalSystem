@@ -27,3 +27,6 @@ elif len(sys.argv) == 3:
     if sys.argv[1] == "analyze":
         m = Mesh(sys.argv[2])
         print(m.dataFilter())
+
+    if sys.argv[1] == "statistics":
+        db.exportDirData(sys.argv[2])

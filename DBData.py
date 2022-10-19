@@ -10,6 +10,7 @@ from dataName import dataName, dataDimension
 from featureName import featureName, featureDimension
 from DebugLog import debugLvl, debugLog
 import numpy as np
+import pandas as pd
 
 
 def plot(outputDir, dictList, featuresList, n_bins=20, size_x=10, size_y=7):
@@ -54,16 +55,18 @@ def exportDirData(dbDir):
                     data = mesh.dataFilter()
                     meshesData.append(data)
             FileIt.close()
-    csvExport('data'+dbDir+'.csv', meshesData)
+    csvExport("./output",'statistics.csv', meshesData)
     return meshesData
 
 def csvExport(outputDir, fileName, data):
     filePath = os.path.join(os.path.realpath("./"+outputDir),fileName)
     os.makedirs(os.path.dirname(filePath), exist_ok=True)
-    file = open(filePath, "w")
-    csvDictWriter = csv.DictWriter(file, fieldnames=data[0].keys())
-    csvDictWriter.writeheader()
-    csvDictWriter.writerows(data)
+    df = pd.DataFrame(data, columns=data[0].keys())
+    df.to_csv(filePath,mode="w")
+    # file = open(filePath, "w")
+    # csvDictWriter = csv.DictWriter(file, fieldnames=data[0].keys())
+    # csvDictWriter.writeheader()
+    # csvDictWriter.writerows(data)
 
 
 def normalization():
