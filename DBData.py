@@ -12,6 +12,10 @@ from DebugLog import debugLvl, debugLog
 import numpy as np
 import pandas as pd
 
+# ---------------------------- STEP 2 ----------------------------------------#
+def plotData(outputDir, dictList, valueList, n_bins=20, size_x=10, size_y=7):
+    for value in valueList:
+        plotValue(getFieldList(value, dictList), value, outputDir, n_bins, size_x, size_y)
 
 def plotHistogram(outputDir, df, feature, n_bins=20, size_x=10, size_y=7):
     dataVisualisation(df, feature, outputDir, n_bins, size_x, size_y)
@@ -20,9 +24,9 @@ def plot3D(outputDir, dictList, featuresList):
     for feature in featuresList:
         if dataName.PCA.value == feature:
             mainComponentPCA = getIndexList(0, getFieldList(feature, dictList))
-            XYZdataVisualisation(mainComponentPCA, feature, outputDir)
+            XYZplotValue(mainComponentPCA, feature, outputDir)
         else :
-            XYZdataVisualisation(getFieldList(feature, dictList), feature, outputDir)
+            XYZplotValue(getFieldList(feature, dictList), feature, outputDir)
 
 def histograms(feature):
     # dictList = exportDBData()
@@ -32,10 +36,7 @@ def histograms(feature):
     plotHistogram(outputDir, df, feature, 19)
 
 def exportDBData(outputDir):
-    dirs = [
-        "./"+outputDir+"/PRINCETON",
-        "./"+outputDir+"/LabeledDB"
-    ]
+    dbDir = "./"+outputDir+"/LabeledDB"
     acc = []
     for dir in dirs:
         acc += exportDirData(dir)
@@ -66,40 +67,27 @@ def csvExport(outputDir, fileName, data):
     # csvDictWriter.writerows(data)
 
 
-def normalization():
-    dirs = [
-        "./remesh/PRINCETON",
-        "./remesh/LabeledDB"
-    ]
-    for dir in dirs:
-        normalise(dir)
-
-def normalise(dbDir):
+def normalise(expectedVerts, eps):
+    dbDir = "./initial/LabeledDB"
     for dir in os.scandir(dbDir):
-        if os.path.isdir(dir):
-            FileIt = os.scandir(os.path.join(dbDir, dir.name))
-            for file in FileIt:
-                fileType = os.path.splitext(os.path.realpath(file))[1]
-                if fileType == ".obj" or fileType == ".off" or fileType == ".ply":
-                    mesh = Mesh(os.path.realpath(file))
-                    mesh.resample()
-                    mesh.saveMesh()
-            FileIt.close()
+        normCategory(os.path.realpath(dir), os.path.dirname(dbDir), expectedVerts, eps)
+
 
 def dataVisualisation(df, feature, outputDir, n_bins=20, size_x=10, size_y=7):
     fig, axs = plt.subplots(1, 1, figsize=(size_x, size_y), tight_layout=True)
 
     plt.xlabel(feature)
     plt.ylabel("Number of mesh(es)")
-    if(feature == dataName.SIDE_SIZE.value and outputDir=='output') : n_bins = [0.99+i*0.001 for i in range(21)]
-    if(feature == dataName.DIST_BARYCENTER.value and outputDir=='output') : n_bins = [0+i*0.0001 for i in range(11)]
-    if(feature == dataName.SIDE_SIZE.value and outputDir=='remesh') :n_bins = [0+i*0.1 for i in range(21)]
-    axs.hist(df[feature], bins=n_bins)
-    # plt.savefig("./" + outputDir + "/" + feature.lower() + '.png')
-    plt.savefig(outputDir+ "\\" +feature.lower()+".png")
+    if feature == dataName.SIDE_SIZE.value and outputDir=='output': n_bins = [0.99+i*0.001 for i in range(21)]
+    if feature == dataName.DIST_BARYCENTER.value and outputDir=='output': n_bins = [0+i*0.0001 for i in range(11)]
+    if feature == dataName.SIDE_SIZE.value and outputDir=='output': n_bins = [0+i*0.1 for i in range(21)]
+    if feature == dataName.FACE_NUMBERS.value and outputDir=='output': n_bins = [9000+i*100 for i in range(21)]
+    if feature == dataName.VERTEX_NUMBERS.value and outputDir=='output': n_bins = [4900+i*10 for i in range(21)]
+    axs.hist(list, bins=n_bins)
+    plt.savefig("./" + outputDir + "/" + feature.lower() + '.png')
 
 
-def XYZdataVisualisation(list, feature, outputDir,size_x=10, size_y=7):
+def XYZplotValue(list, feature, outputDir,size_x=10, size_y=7):
     fig, axs = plt.subplots(1,1,figsize=(size_x, size_y), tight_layout=True)
     data = [getIndexList(0, list, feature == dataName.PCA.value), getIndexList(1, list, feature == dataName.PCA.value), getIndexList(2, list, feature == dataName.PCA.value)]
     colors = ['blue', 'red', 'yellow']
@@ -115,6 +103,60 @@ def XYZdataVisualisation(list, feature, outputDir,size_x=10, size_y=7):
     plt.savefig("./" + outputDir + "/" + feature.lower() + '.png')
 
 
+def normCategory(path, sourceDir, expectedVerts, eps):
+    if os.path.isdir(path):
+        FileIt = os.scandir(path)
+        for file in FileIt:
+            fileType = os.path.splitext(os.path.realpath(file))[1]
+            if fileType == ".obj" or fileType == ".off" or fileType == ".ply":
+                mesh = Mesh(os.path.realpath(file))
+                mesh.resample(expectedVerts, eps)
+                mesh.saveMesh(sourceDir)
+        FileIt.close()
+
+
+def viewCategory(path, camPos="diagonal", absolutePath=False, debug=False):
+    totalMesh = 0
+    if absolutePath :
+        outPath = path
+    else :
+        outPath = os.path.join('./output', os.path.relpath(path, './remesh'))
+    os.makedirs(os.path.join(os.path.realpath(outPath),'screenshot'), exist_ok=True)
+    if os.path.isdir(path):
+        FileIt = os.scandir(outPath)
+        for file in FileIt:
+            fileType = os.path.splitext(os.path.realpath(file))[1]
+            if fileType == ".obj" or fileType == ".off" or fileType == ".ply":
+                totalMesh += 1
+                mesh = Mesh(os.path.realpath(file))
+                mesh.screenshot(os.path.join(os.path.realpath(outPath), 'screenshot'), camPos)
+        FileIt.close()
+
+    nbOfLine = (totalMesh//5)
+    if totalMesh%5>0 : nbOfLine += 1
+    fig, axs = plt.subplots(nbOfLine, 5, figsize=(30, 30))
+    i=0
+    if os.path.isdir(path):
+        FileIt = os.scandir(os.path.join(os.path.realpath(outPath), 'screenshot'))
+        for screen in FileIt:
+            fileType = os.path.splitext(os.path.realpath(screen))[1]
+            if screen.is_file() and fileType == ".jpg":
+                image = mpimg.imread(os.path.realpath(screen))
+                axs[i//5, i%5].imshow(image)
+                axs[i//5, i%5].axis('off')
+                # axs[i//5, i%5].set_title(str(screen.name))
+                i+=1
+        FileIt.close()
+    plt.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=0.95, wspace=0, hspace=0.05)
+    plt.savefig(outPath + "/meshes_overview.jpg")
+    if(debug):
+        plt.show()
+
+
+def extractData(folder):
+    histograms(folder, [dataName.FACE_NUMBERS, dataName.VERTEX_NUMBERS])
+
+# ---------------------------- STEP 3 ----------------------------------------#
 def exportFeatures(dbDir, funcName):
     dbHistValue = []
     dbScalarValue = []
@@ -122,8 +164,10 @@ def exportFeatures(dbDir, funcName):
     for dir in os.scandir(dbDir):
         if os.path.isdir(dir):
             catVal=drawHistogram(os.path.join(dbDir, dir.name),funcName)
-            if featureDimension[funcName]==1: dbScalarValue.append(catVal)
-            elif featureDimension[funcName]==2: dbHistValue.append(catVal)
+            if featureDimension[funcName]==1:
+                dbScalarValue.append(catVal)
+            elif featureDimension[funcName]==2:
+                dbHistValue.append(catVal)
             nbCat += 1
             print(dir.name)
     return dbScalarValue, dbHistValue, nbCat
@@ -138,6 +182,10 @@ def drawHistogram(path, funcName):
             if fileType == ".obj" or fileType == ".off" or fileType == ".ply":
                 features = FeaturesExtract(os.path.realpath(file))
                 featureVal = features.call(funcName)
+                if len(res)==0 or min(res) > featureVal:
+                    debugLog("Local MIN : " + str(featureVal) + " at " + os.path.realpath(file) + " for features " + funcName, debugLvl.INFO)
+                if len(res)==0 or max(res) < featureVal:
+                    debugLog("Local MAX : " + str(featureVal) + " at " + os.path.realpath(file) + " for features " + funcName, debugLvl.INFO)
                 res.append(featureVal)
         FileIt.close()
         return [res, path]
@@ -189,7 +237,7 @@ def drawFeatures(dbDir, funcName):
             values = catValue[0]
             catName = catValue[1]
             for objvalue in values:
-                axs[i // 3, i % 3].plot(objvalue[0], objvalue[1])
+                axs[i // 3, i % 3].plotFeatures(objvalue[0], objvalue[1])
             axs[i // 3, i % 3].set_title(str(os.path.relpath(catName, dbDir)))
             i += 1
         while (i % 3) != 0:
@@ -202,54 +250,3 @@ def drawCategoryFeatures(dbDir,functionsName=None):
     if functionsName is None: functionsName = [f.value for f in featureName]
     for funcName in functionsName:
         drawFeatures(dbDir, funcName)
-
-def normCategory(path):
-    totalMesh = 0
-    if os.path.isdir(path):
-        FileIt = os.scandir(path)
-        for file in FileIt:
-            fileType = os.path.splitext(os.path.realpath(file))[1]
-            if fileType == ".obj" or fileType == ".off" or fileType == ".ply":
-                totalMesh += 1
-                mesh = Mesh(os.path.realpath(file))
-                mesh.normalise()
-                mesh.saveMesh()
-        FileIt.close()
-
-
-def viewCategory(path, camPos="diagonal", absolutePath=False, debug=False):
-    totalMesh = 0
-    if absolutePath :
-        outPath = path
-    else :
-        outPath = os.path.join('./output', os.path.relpath(path, './remesh'))
-    os.makedirs(os.path.join(os.path.realpath(outPath),'screenshot'), exist_ok=True)
-    if os.path.isdir(path):
-        FileIt = os.scandir(outPath)
-        for file in FileIt:
-            fileType = os.path.splitext(os.path.realpath(file))[1]
-            if fileType == ".obj" or fileType == ".off" or fileType == ".ply":
-                totalMesh += 1
-                mesh = Mesh(os.path.realpath(file))
-                mesh.screenshot(os.path.join(os.path.realpath(outPath), 'screenshot'), camPos)
-        FileIt.close()
-
-    nbOfLine = (totalMesh//5)
-    if totalMesh%5>0 : nbOfLine += 1
-    fig, axs = plt.subplots(nbOfLine, 5, figsize=(30, 30))
-    i=0
-    if os.path.isdir(path):
-        FileIt = os.scandir(os.path.join(os.path.realpath(outPath), 'screenshot'))
-        for screen in FileIt:
-            fileType = os.path.splitext(os.path.realpath(screen))[1]
-            if screen.is_file() and fileType == ".jpg":
-                image = mpimg.imread(os.path.realpath(screen))
-                axs[i//5, i%5].imshow(image)
-                axs[i//5, i%5].axis('off')
-                # axs[i//5, i%5].set_title(str(screen.name))
-                i+=1
-        FileIt.close()
-    plt.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=0.95, wspace=0, hspace=0.05)
-    plt.savefig(outPath + "/meshes_overview.jpg")
-    if(debug):
-        plt.show()

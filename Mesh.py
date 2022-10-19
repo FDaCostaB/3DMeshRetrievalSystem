@@ -17,7 +17,6 @@ class Mesh:
             self.ms = pymeshlab.MeshSet()
             self.ms.load_new_mesh(meshPath)
             self.mesh = self.ms.current_mesh()
-            self.cellSizeOfRemeshing = pymeshlab.Percentage(1.25)
         else:
             raise Exception("Format not accepted")
 
@@ -33,14 +32,48 @@ class Mesh:
         size = [ self.mesh.bounding_box().dim_x(), self.mesh.bounding_box().dim_y(), self.mesh.bounding_box().dim_z()]
         res = {dataName.CATEGORY.value : category, dataName.FACE_NUMBERS.value : self.mesh.face_number(), dataName.VERTEX_NUMBERS.value : self.mesh.vertex_number(),
                dataName.SIDE_SIZE.value : max(size), dataName.MOMENT.value : self.momentOrder(), dataName.SIZE.value : size, dataName.BARYCENTER.value : out_dict['barycenter'],
-               dataName.DIST_BARYCENTER.value : Math.length(out_dict['barycenter']),dataName.PCA.value :list(out_dict['pca']), dataName.DIAGONAL.value : self.mesh.bounding_box().diagonal()}
+               dataName.DIST_BARYCENTER.value : Math.length(out_dict['barycenter']),dataName.PCA.value :list(out_dict['pca']),
+               dataName.DIAGONAL.value : self.mesh.bounding_box().diagonal(), dataName.COMPONENTS_NUMBER.value : self.getNbComponents() }
         return res
 
-    def remesh(self):
+    def normaliseVertices(self, expectedVerts, eps):
+        LIMIT = 5
+        i = 0
+
+        oldStats = self.dataFilter()
+        newStats = self.dataFilter()
+        while (newStats[dataName.VERTEX_NUMBERS.value] < expectedVerts - eps and i < LIMIT):
+            if newStats[dataName.VERTEX_NUMBERS.value] < expectedVerts - eps:
+                try:
+                    self.ms.apply_filter('meshing_surface_subdivision_loop', threshold=pymeshlab.Percentage(0), iterations=1)
+                except:
+                    self.ms.apply_filter('meshing_repair_non_manifold_edges', method='Remove Faces')
+                    self.ms.apply_filter('meshing_repair_non_manifold_vertices')
+                    debugLog(os.path.realpath(self.meshPath) + " - ERROR : Failed to apply filter:  'meshing_surface_subdivision_loop' => Applying Non-Manifold Repair",debugLvl.ERROR)
+            elif newStats[dataName.VERTEX_NUMBERS.value] > expectedVerts + eps:
+                self.ms.apply_filter('meshing_decimation_quadric_edge_collapse', targetperc= expectedVerts / newStats[dataName.VERTEX_NUMBERS.value])
+            newStats = self.dataFilter()
+            i += 1
+
+        # Extra turn of decimation (merging vertex) to reduce in range if laste iteration subdivide to above the range
+        # Decimation (merging vertex) to reduce in range [expectedVerts - eps, expectedVerts + eps]
+        if newStats[dataName.VERTEX_NUMBERS.value] > expectedVerts:
+            self.ms.apply_filter('meshing_decimation_quadric_edge_collapse',targetperc=expectedVerts / newStats[dataName.VERTEX_NUMBERS.value])
+
+        newStats = self.dataFilter()
+        # Laplacian smooth to get a more uniformly distributed point cloud over the mesh
+        try:
+            self.ms.apply_filter('apply_coord_laplacian_smoothing', stepsmoothnum=5)
+        except:
+            debugLog(os.path.realpath(self.meshPath) + " - ERROR : Failed to apply filter:  'apply_coord_laplacian_smoothing.",debugLvl.ERROR)
+        if newStats[dataName.VERTEX_NUMBERS.value] < expectedVerts - eps or newStats[dataName.VERTEX_NUMBERS.value] > expectedVerts + eps:
+            debugLog(os.path.realpath(self.meshPath) + ' : Before - ' + str(oldStats[dataName.VERTEX_NUMBERS.value]) +
+                     ' | After - ' + str(newStats[dataName.VERTEX_NUMBERS.value]), debugLvl.INFO)
+
+    def clean(self):
         self.ms.apply_filter('meshing_remove_duplicate_faces')
         self.ms.apply_filter('meshing_remove_duplicate_vertices')
         self.ms.apply_filter('meshing_remove_unreferenced_vertices')
-        self.ms.generate_resampled_uniform_mesh(cellsize = self.cellSizeOfRemeshing)
 
     def momentOrder(self):
         faces = self.mesh.face_matrix()
@@ -95,7 +128,7 @@ class Mesh:
                                            axisy=-1 * stats[dataName.BARYCENTER.value][1],
                                            axisz=-1 * stats[dataName.BARYCENTER.value][2])
         self.principalAxisAlignement()
-        self.flipMomentTest()
+        # self.flipMomentTest()
         stats = self.dataFilter()
         self.ms.compute_matrix_from_scaling_or_normalization(axisx=1 / stats[dataName.SIDE_SIZE.value],
                                                              customcenter=stats[dataName.BARYCENTER.value],
@@ -104,18 +137,32 @@ class Mesh:
             self.printProperties()
             self.compare()
 
-    def resample(self, showComparison=False):
+    def resample(self, expectedVerts, eps, showComparison=False):
         if showComparison:
            self.printProperties()
 
-        self.remesh()
+        self.clean()
+        self.normaliseVertices(expectedVerts, eps)
         self.normalise()
 
         if showComparison:
             self.printProperties()
             self.compare()
 
+    def getNbComponents(self):
+        self.ms.compute_color_by_conntected_component_per_face()
+        face_colors = self.mesh.face_color_matrix()
+        colors = []
 
+        # traverse for all elements
+        for fcolor in face_colors:
+            found = False
+            for color in colors:
+                if fcolor[0] == color[0] and fcolor[1] == color[1] and fcolor[2] == color[2]:
+                    found=True
+            if len(colors) == 0 or not found:
+                colors.append(fcolor)
+        return len(colors)
 # ---------------------------------------------------------------------------------------------- #
 # ---------------------------------------- I/O features ---------------------------------------- #
 # ---------------------------------------------------------------------------------------------- #
@@ -138,8 +185,7 @@ class Mesh:
         ps.register_surface_mesh("After Mesh", self.ms.mesh(len(self.ms)-2).vertex_matrix(), self.ms.mesh(len(self.ms)-2).face_matrix())
         ps.show()
 
-
-    def saveMesh(self, originalPath='./remesh'):
+    def saveMesh(self, originalPath):
         # Same path with output instead of Model
         newPath = os.path.join('./output',os.path.relpath(self.meshPath,originalPath))
 

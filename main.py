@@ -5,6 +5,17 @@ import os
 from Features import FeaturesExtract
 from Mesh import Mesh
 
+def step3View():
+    db.normalise(5000, 100)
+    for dir in os.scandir('output/LabeledDB'):
+        if os.path.isdir(dir):
+            db.viewCategory(os.path.realpath(dir), debug=True)
+
+def step2():
+    db.normalise(5000, 100)
+    db.extractData('initial')
+    db.extractData('output')
+
 if len(sys.argv) == 1:
     db.normalization()
     db.plotHistogram('remesh')

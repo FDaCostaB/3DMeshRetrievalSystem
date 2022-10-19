@@ -165,6 +165,8 @@ class FeaturesExtract:
             return self.rectangularity()
         elif funcName==featureName.COMPACTNESS.value:
             return self.compactness()
+        elif funcName==featureName.SPHERICITY.value:
+            return self.sphericity()
         elif funcName==featureName.DIAMETER.value:
             return self.diameter()
         elif funcName== featureName.ECCENTRICITY.value:

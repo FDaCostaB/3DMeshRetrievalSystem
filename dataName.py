@@ -11,7 +11,9 @@ class dataName(Enum):
     DIST_BARYCENTER = "Distance of barycenter from origin"
     PCA = "PCA"
     DIAGONAL = "PymeshLab Diag"
+    COMPONENTS_NUMBER = "Components number"
 
 
 dataDimension = { dataName.CATEGORY: 1, dataName.FACE_NUMBERS : 1, dataName.VERTEX_NUMBERS : 1, dataName.SIDE_SIZE : 1,
-                 dataName.MOMENT : 3, dataName.SIZE : 3, dataName.BARYCENTER : 3, dataName.DIST_BARYCENTER : 1, dataName.PCA : 3, dataName.DIAGONAL : 1 }
+                 dataName.MOMENT : 3, dataName.SIZE : 3, dataName.BARYCENTER : 3, dataName.DIST_BARYCENTER : 1, dataName.PCA : 3,
+                  dataName.DIAGONAL : 1, dataName.COMPONENTS_NUMBER : 1 }
