@@ -7,6 +7,10 @@ from Mesh import Mesh
 
 
 if len(sys.argv) == 3:
+    if sys.argv[1] == "render":
+        m = Mesh(sys.argv[2])
+        m.render()
+
     if sys.argv[1] == "analyze":
         m = Mesh(sys.argv[2])
         print(m.dataFilter())
@@ -23,6 +27,12 @@ if len(sys.argv) == 3:
 
     if sys.argv[1] == "view-category":
         db.viewCategory(os.path.realpath('output/LabeledDB/'+sys.argv[2]), absolutePath=True, debug=True)
+
+    if sys.argv[1] == "features":
+        db.exportDBFeatures(sys.argv[2])
+
+    if sys.argv[1] == "histogram-features":
+        db.drawCategoryFeatures([sys.argv[2]])
 
 if len(sys.argv) == 2:
     if sys.argv[1] == "full-normalisation":

@@ -6,6 +6,7 @@ import numpy as np
 from math import pi
 import Math
 from featureName import featureName, featureDimension
+from parse import getFieldList, getIndexList
 from DebugLog import debugLog, debugLvl
 
 
@@ -25,6 +26,33 @@ class FeaturesExtract:
 # ------------------------------------ Features computation ------------------------------------ #
 # ---------------------------------------------------------------------------------------------- #
 
+    def featureFilter(self):
+        res = {"Path" : self.meshPath,featureName.CENTROID.value : self.centroid(), featureName.SURFACE_AREA.value : self.surfaceArea(), featureName.VOLUME.value : self.volume(),
+                featureName.COMPACTNESS.value : self.compactness(), featureName.SPHERICITY.value : self.sphericity(),
+                featureName.RECTANGULARITY.value : self.rectangularity(), featureName.DIAMETER.value : self.diameter(),
+                featureName.ECCENTRICITY.value : self.eccentricity()}
+        A3 = self.A3()
+        for i in range(len(A3[0])):
+            res["A3-x"+str(i)] = A3[0][i]
+            res["A3-y"+str(i)] = A3[1][i]
+        D1 = self.D1()
+        for i in range(len(D1[0])):
+            res["D1-x"+str(i)] = D1[0][i]
+            res["D1-y"+str(i)] = D1[1][i]
+        D2 = self.D2()
+        for i in range(len(D2[0])):
+            res["D2-x"+str(i)] = D2[0][i]
+            res["D2-y"+str(i)] = D2[1][i]
+        D3 = self.D3()
+        for i in range(len(D3[0])):
+            res["D3-x"+str(i)] = D3[0][i]
+            res["D3-y"+str(i)] = D3[1][i]
+        D4 = self.D4()
+        for i in range(len(D4[0])):
+            res["D4-x" + str(i)] = D4[0][i]
+            res["D4-y" + str(i)] = D4[1][i]
+        return res
+
     def A3(self, sampleNum=100000):
         vertices = self.ms.mesh(0).vertex_matrix()
         res = []
@@ -41,7 +69,10 @@ class FeaturesExtract:
                     if i0 == i1 or i0 == i2 or i1 == i2: break
                     v2 = vertices[i2]
                     res.append(Math.angle(Math.vect(v0, v1), Math.vect(v0, v2)))
-        return res
+        y, binEdges = np.histogram(res, bins=50)
+        x = 0.5 * (binEdges[1:] + binEdges[:-1])
+        res.append([x, y])
+        return [x, y]
 
 
     def D1(self, sampleNum=100000):
@@ -51,7 +82,10 @@ class FeaturesExtract:
             i0 = random.randint(0, len(vertices) - 1)
             v0 = vertices[i0]
             res.append(Math.length(v0))
-        return res
+        y, binEdges = np.histogram(res, bins=50)
+        x = 0.5 * (binEdges[1:] + binEdges[:-1])
+        res.append([x, y])
+        return [x, y]
 
 
     def D2(self, sampleNum=100000):
@@ -66,7 +100,10 @@ class FeaturesExtract:
                 if i0 == i1 : break
                 v1 = vertices[i1]
                 res.append(Math.dist(v0, v1))
-        return res
+        y, binEdges = np.histogram(res, bins=50)
+        x = 0.5 * (binEdges[1:] + binEdges[:-1])
+        res.append([x, y])
+        return [x, y]
 
 
     def D3(self, sampleNum=100000):
@@ -85,7 +122,10 @@ class FeaturesExtract:
                     if i0 == i1 or i0 == i2 or i1 == i2: break
                     v2 = vertices[i2]
                     res.append(Math.triangleAreaVector(Math.vect(v0, v1), Math.vect(v0, v2)) ** 0.5)
-        return res
+        y, binEdges = np.histogram(res, bins=50)
+        x = 0.5 * (binEdges[1:] + binEdges[:-1])
+        res.append([x, y])
+        return [x, y]
 
 
     def D4(self, sampleNum=100000):
@@ -113,7 +153,10 @@ class FeaturesExtract:
                             res.append(vol**(1/3))
                         else:
                             nbMiss += 1
-        return res
+        y, binEdges = np.histogram(res, bins=50)
+        x = 0.5 * (binEdges[1:] + binEdges[:-1])
+        res.append([x, y])
+        return [x, y]
 
 
     def surfaceArea(self):
@@ -138,10 +181,6 @@ class FeaturesExtract:
                                                  Math.vect(barycenter_cloud[compInd], vertices[triVerts[1]]),
                                                  Math.vect(barycenter_cloud[compInd], vertices[triVerts[2]]))
                 volume += tetraVol
-        # geoMes=self.ms.get_geometric_measures()
-        # if('mesh_volume' in geoMes.keys()): pmVol =geoMes['mesh_volume']
-        # else: pmVol='None'
-        # debugLog('Our Volume : ' + str(volume)+ " - PyMeshLab volume : " + str(pmVol),debugLvl.DEBUG)
         return abs(volume)
 
     def call(self, funcName):
@@ -216,7 +255,7 @@ class FeaturesExtract:
         max = self.mesh.bounding_box().max()
         return (max[0] - min[0]) * (max[1] - min[1]) * (max[2] - min[2])
 
-    # Special case - C:\Users\fabie\PycharmProjects\3DMeshRetrievalSystem\output\LabeledDB\Bearing\357.off
+
     def rectangularity(self):
         return self.volume()/self.volumeOBB()
 
@@ -265,9 +304,15 @@ class FeaturesExtract:
         return vertex, faces
 
     def eccentricity(self):
-        e1 = self.mesh.bounding_box().dim_x()
-        e3 = self.mesh.bounding_box().dim_z()
-        return e1/e3
+        vertexMat = self.mesh.vertex_matrix()
+        V = np.zeros((3, len(vertexMat)))
+        V[0] = getIndexList(0, vertexMat)
+        V[1] = getIndexList(1, vertexMat)
+        V[2] = getIndexList(2, vertexMat)
+
+        V_cov = np.cov(V)
+        eigenvalues, eigenvectors = np.linalg.eig(V_cov)
+        return max(eigenvalues)/min(eigenvalues)
 
 # ---------------------------------------------------------------------------------------------- #
 # ---------------------------------------- I/O features ---------------------------------------- #
@@ -280,19 +325,3 @@ class FeaturesExtract:
         ps.register_surface_mesh("Before Mesh", self.ms.mesh(0).vertex_matrix(), self.ms.mesh(0).face_matrix())
         ps.register_surface_mesh("Bounding box", np.array(vertex), np.array(faces))
         ps.show()
-
-    def silhouetteExport(self):
-        os.makedirs('./screenshot', exist_ok=True)
-        fileName = os.path.splitext(os.path.basename(self.meshPath))[0]
-        ps.init()
-        ps.set_ground_plane_mode("none")
-        ps.register_surface_mesh("my mesh", self.ms.mesh(0).vertex_matrix(), self.ms.mesh(0).face_matrix(), material='flat',
-                                 color=[0, 0, 0])
-        ps.set_view_projection_mode("orthographic")
-        ps.set_screenshot_extension(".jpg")
-        ps.set_up_dir("x_up")
-        ps.screenshot('./screenshot/' + fileName + '_x.jpg', False)
-        ps.set_up_dir("y_up")
-        ps.screenshot('./screenshot/' + fileName + '_y.jpg', False)
-        ps.set_up_dir("z_up")
-        ps.screenshot('./screenshot/' + fileName + '_z.jpg', False)

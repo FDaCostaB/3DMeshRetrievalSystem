@@ -34,7 +34,7 @@ class Mesh:
         size = [ self.mesh.bounding_box().dim_x(), self.mesh.bounding_box().dim_y(), self.mesh.bounding_box().dim_z()]
         res = {dataName.CATEGORY.value : category, dataName.FACE_NUMBERS.value : self.mesh.face_number(), dataName.VERTEX_NUMBERS.value : self.mesh.vertex_number(),
                dataName.SIDE_SIZE.value : max(size), dataName.MOMENT.value : self.momentOrder(), dataName.SIZE.value : size, dataName.BARYCENTER.value : out_dict['barycenter'],
-               dataName.DIST_BARYCENTER.value : Math.length(out_dict['barycenter']), dataName.PCA.value : eigenvectors, "Eigenvalues" : eigenvalues, "Eigenvectors" :eigenvectors,
+               dataName.DIST_BARYCENTER.value : Math.length(out_dict['barycenter']), dataName.PCA.value : eigenvectors, dataName.EIGENVALUES.value : eigenvalues,
                dataName.DIAGONAL.value : self.mesh.bounding_box().diagonal(), dataName.COMPONENTS_NUMBER.value : self.getNbComponents() }
         return res
 

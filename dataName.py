@@ -12,9 +12,10 @@ class dataName(Enum):
     PCA = "PCA"
     DIAGONAL = "PymeshLab Diag"
     COMPONENTS_NUMBER = "Components number"
+    EIGENVALUES = "Eigenvalues"
 
 
 dataDimension = { dataName.CATEGORY.value: 1, dataName.FACE_NUMBERS.value : 1, dataName.VERTEX_NUMBERS.value : 1,
                   dataName.SIDE_SIZE.value : 1, dataName.MOMENT.value : 3, dataName.SIZE.value : 3,
                   dataName.BARYCENTER.value : 3, dataName.DIST_BARYCENTER.value : 1, dataName.PCA.value : 3,
-                  dataName.DIAGONAL.value : 1, dataName.COMPONENTS_NUMBER.value : 1 }
+                  dataName.DIAGONAL.value : 1, dataName.COMPONENTS_NUMBER.value : 1, dataName.EIGENVALUES.value : 1 }
