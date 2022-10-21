@@ -20,3 +20,6 @@ featureDimension = { featureName.A3.value: 2, featureName.D1.value : 2, featureN
                      featureName.D4.value : 2, featureName.SURFACE_AREA.value : 1, featureName.VOLUME.value : 1,
                      featureName.COMPACTNESS.value : 1, featureName.SPHERICITY.value : 1, featureName.RECTANGULARITY.value : 1,
                      featureName.DIAMETER.value : 1, featureName.ECCENTRICITY.value : 1, featureName.CENTROID.value : 1 }
+
+featureHistoBins = { featureName.A3.value : 36, featureName.D1.value : 30, featureName.D2.value : 30,
+                     featureName.D3.value : 30, featureName.D4.value : 30 }

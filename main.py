@@ -32,7 +32,11 @@ if len(sys.argv) == 3:
         db.exportDBFeatures(sys.argv[2])
 
     if sys.argv[1] == "histogram-features":
-        db.drawCategoryFeatures([sys.argv[2]])
+        db.drawCategoryFeatures(sys.argv[2])
+
+    if sys.argv[1] == "query":
+        queryRes = db.query(sys.argv[2])
+        showRes = db.displayQueryRes(sys.argv[2], queryRes)
 
 if len(sys.argv) == 2:
     if sys.argv[1] == "full-normalisation":

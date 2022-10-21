@@ -27,6 +27,12 @@ remesh
 *.bcf
 *.run.xml
 
+#Archive
+*.zip
+*.7z
+*.tar
+*.gz
+
 # C extensions
 *.so
 

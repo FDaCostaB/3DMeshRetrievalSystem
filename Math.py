@@ -41,3 +41,6 @@ def tetrahedronVolume(vectA, vectB, vectC):
 
 def vect(vectA, vectB):
     return [vectB[0] - vectA[0], vectB[1] - vectA[1], vectB[2] - vectA[2]]
+
+def binsArray(leftEdge,rightEdge,nbBins):
+    return [leftEdge+i*(rightEdge-leftEdge)/(nbBins+1) for i in range(nbBins+1)]

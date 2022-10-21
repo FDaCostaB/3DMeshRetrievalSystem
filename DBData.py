@@ -2,9 +2,9 @@ import numpy as np
 import os
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
-
+import bisect
 import Math
-from Features import FeaturesExtract
+from Features import FeaturesExtract, euclidianDist
 from parse import getFieldList, getIndexList
 from Mesh import Mesh
 from dataName import dataName, dataDimension
@@ -180,7 +180,7 @@ def exportFeatures(dbDir, funcName):
     nbCat=0
     for dir in os.scandir(dbDir):
         if os.path.isdir(dir):
-            catVal=getFeaturesHistogram(os.path.join(dbDir, dir.name),funcName)
+            catVal=getFeaturesHistogram(os.path.join(dbDir, dir.name), funcName)
             if featureDimension[funcName]==1:
                 dbScalarValue.append(catVal)
             elif featureDimension[funcName]==2:
@@ -254,10 +254,75 @@ def drawFeatures(dbDir, funcName):
             i += 1
         plt.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=0.95, wspace=0.2, hspace=0.3)
         plt.savefig("./output/" + funcName + ".jpg")
-        plt.show()
 
 
-def drawCategoryFeatures(functionsName=None):
-    if functionsName is None: functionsName = [f.value for f in featureName]
+def drawCategoryFeatures(functionsName):
+    if functionsName == "all":
+        functionsName = [f.value for f in featureName]
+    elif functionsName == "histogram":
+        functionsName = [featureName.A3.value, featureName.D1.value , featureName.D2.value, featureName.D3.value, featureName.D4.value]
+    elif functionsName == "scalar":
+        functionsName = [featureName.SURFACE_AREA.value, featureName.VOLUME.value , featureName.COMPACTNESS.value,
+                         featureName.SPHERICITY.value, featureName.RECTANGULARITY.value, featureName.DIAMETER.value,
+                         featureName.ECCENTRICITY.value, featureName.CENTROID.value]
+    else:
+        functionsName = [functionsName]
     for funcName in functionsName:
         drawFeatures("./output/LabeledDB", funcName)
+
+def parseFeatures():
+    df = pd.read_csv(os.path.join(os.path.realpath("./output"), "features.csv"))
+    std = df.std(numeric_only=True)
+    avg = df.mean(numeric_only=True)
+    DB = []
+    line = {}
+    for i, row in df.iterrows():
+        for colName in df.columns:
+            if colName[:7]!='Unnamed':
+                if colName[:2] in ['A3','D1','D2','D3','D4'] or colName == 'Path':
+                    line[colName] = row[colName]
+                else :
+                    line[colName] = (row[colName] - avg[colName])/std[colName]
+        DB.append(line)
+        line = {}
+    return DB, avg, std
+def query(path, k=5):
+    mesh = FeaturesExtract(os.path.realpath(path))
+    queryFeatures = mesh.featureFilter()
+    DB, avg, std = parseFeatures()
+
+    for key in queryFeatures.keys():
+        if key[:2] not in ['A3', 'D1', 'D2', 'D3', 'D4'] and key != 'Path':
+            queryFeatures[key] = (queryFeatures[key] - avg[key]) / std[key]
+    distList = []
+    for row in DB:
+        if row["Path"]!=queryFeatures["Path"]: bisect.insort(distList, euclidianDist(queryFeatures,row))
+    return [(os.path.relpath(p2,'.'), dist) for dist, p1, p2 in distList[:k]]
+
+def displayQueryRes(queryShape, res):
+    fig, axs = plt.subplots(1, len(res)+1, figsize=(18, 4))
+    i = 0
+    res.insert(0,(os.path.relpath(queryShape,'.'), 0))
+    os.makedirs(os.path.join(os.path.realpath('output'), 'screenshot'), exist_ok=True)
+    for path,dist in res:
+        mesh = Mesh(os.path.realpath(path))
+        mesh.screenshot(os.path.join(os.path.realpath('output'), 'screenshot'), fileName='res'+str(i)+'jpg')
+        i += 1
+
+    i = 0
+    FileIt = os.scandir(os.path.join(os.path.realpath('output'), 'screenshot'))
+    for screen in FileIt:
+        fileType = os.path.splitext(os.path.realpath(screen))[1]
+        if screen.is_file() and fileType == ".jpg":
+            image = mpimg.imread(os.path.realpath(screen))
+            axs[i].imshow(image)
+            axs[i].axis('off')
+            if i==0:
+                axs[i].set_title('Query shape')
+            else:
+                axs[i].set_title(res[i][0] +'\n d='+str(res[i][1]))
+            i += 1
+    FileIt.close()
+    plt.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=0.95, wspace=0.5, hspace=0.05)
+    plt.show()
+

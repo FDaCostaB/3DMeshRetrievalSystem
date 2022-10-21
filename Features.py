@@ -5,7 +5,7 @@ import polyscope as ps
 import numpy as np
 from math import pi
 import Math
-from featureName import featureName, featureDimension
+from featureName import featureName, featureDimension, featureHistoBins
 from parse import getFieldList, getIndexList
 from DebugLog import debugLog, debugLvl
 
@@ -27,30 +27,25 @@ class FeaturesExtract:
 # ---------------------------------------------------------------------------------------------- #
 
     def featureFilter(self):
-        res = {"Path" : self.meshPath,featureName.CENTROID.value : self.centroid(), featureName.SURFACE_AREA.value : self.surfaceArea(), featureName.VOLUME.value : self.volume(),
+        res = {"Path" : self.meshPath,featureName.CENTROID.value : Math.length(self.centroid()), featureName.SURFACE_AREA.value : self.surfaceArea(), featureName.VOLUME.value : self.volume(),
                 featureName.COMPACTNESS.value : self.compactness(), featureName.SPHERICITY.value : self.sphericity(),
                 featureName.RECTANGULARITY.value : self.rectangularity(), featureName.DIAMETER.value : self.diameter(),
                 featureName.ECCENTRICITY.value : self.eccentricity()}
         A3 = self.A3()
         for i in range(len(A3[0])):
-            res["A3-x"+str(i)] = A3[0][i]
-            res["A3-y"+str(i)] = A3[1][i]
+            res["A3-"+str(i)] = A3[1][i]
         D1 = self.D1()
         for i in range(len(D1[0])):
-            res["D1-x"+str(i)] = D1[0][i]
-            res["D1-y"+str(i)] = D1[1][i]
+            res["D1-"+str(i)] = D1[1][i]
         D2 = self.D2()
         for i in range(len(D2[0])):
-            res["D2-x"+str(i)] = D2[0][i]
-            res["D2-y"+str(i)] = D2[1][i]
+            res["D2-"+str(i)] = D2[1][i]
         D3 = self.D3()
         for i in range(len(D3[0])):
-            res["D3-x"+str(i)] = D3[0][i]
-            res["D3-y"+str(i)] = D3[1][i]
+            res["D3-"+str(i)] = D3[1][i]
         D4 = self.D4()
         for i in range(len(D4[0])):
-            res["D4-x" + str(i)] = D4[0][i]
-            res["D4-y" + str(i)] = D4[1][i]
+            res["D4-" + str(i)] = D4[1][i]
         return res
 
     def A3(self, sampleNum=100000):
@@ -69,11 +64,12 @@ class FeaturesExtract:
                     if i0 == i1 or i0 == i2 or i1 == i2: break
                     v2 = vertices[i2]
                     res.append(Math.angle(Math.vect(v0, v1), Math.vect(v0, v2)))
-        y, binEdges = np.histogram(res, bins=50)
+        y, binEdges = np.histogram(res, bins=Math.binsArray(0, pi, featureHistoBins[featureName.A3.value]))
         x = 0.5 * (binEdges[1:] + binEdges[:-1])
-        res.append([x, y])
-        return [x, y]
-
+        normalisedY = []
+        for yVal in y:
+            normalisedY.append(yVal / sum(y))
+        return [x, normalisedY]
 
     def D1(self, sampleNum=100000):
         vertices = self.ms.mesh(0).vertex_matrix()
@@ -82,11 +78,12 @@ class FeaturesExtract:
             i0 = random.randint(0, len(vertices) - 1)
             v0 = vertices[i0]
             res.append(Math.length(v0))
-        y, binEdges = np.histogram(res, bins=50)
+        y, binEdges = np.histogram(res, bins=Math.binsArray(0, 3**(1/2)/2, featureHistoBins[featureName.D1.value]))
         x = 0.5 * (binEdges[1:] + binEdges[:-1])
-        res.append([x, y])
-        return [x, y]
-
+        normalisedY = []
+        for yVal in y:
+            normalisedY.append(yVal / sum(y))
+        return [x, normalisedY]
 
     def D2(self, sampleNum=100000):
         vertices = self.ms.mesh(0).vertex_matrix()
@@ -97,14 +94,15 @@ class FeaturesExtract:
             v0 = vertices[i0]
             for j in range(upperbound):
                 i1 = random.randint(0, len(vertices) - 1)
-                if i0 == i1 : break
+                if i0 == i1: break
                 v1 = vertices[i1]
                 res.append(Math.dist(v0, v1))
-        y, binEdges = np.histogram(res, bins=50)
+        y, binEdges = np.histogram(res, bins=Math.binsArray(0, 3**(1/2), featureHistoBins[featureName.D2.value]))
         x = 0.5 * (binEdges[1:] + binEdges[:-1])
-        res.append([x, y])
-        return [x, y]
-
+        normalisedY = []
+        for yVal in y:
+            normalisedY.append(yVal / sum(y) )
+        return [x, normalisedY]
 
     def D3(self, sampleNum=100000):
         vertices = self.ms.mesh(0).vertex_matrix()
@@ -115,18 +113,19 @@ class FeaturesExtract:
             v0 = vertices[i0]
             for j in range(upperbound):
                 i1 = random.randint(0, len(vertices) - 1)
-                if i0 == i1  : break
+                if i0 == i1: break
                 v1 = vertices[i1]
                 for k in range(upperbound):
                     i2 = random.randint(0, len(vertices) - 1)
                     if i0 == i1 or i0 == i2 or i1 == i2: break
                     v2 = vertices[i2]
                     res.append(Math.triangleAreaVector(Math.vect(v0, v1), Math.vect(v0, v2)) ** 0.5)
-        y, binEdges = np.histogram(res, bins=50)
+        y, binEdges = np.histogram(res, bins=Math.binsArray(0, (3/4)**(1/2), featureHistoBins[featureName.D3.value]))
         x = 0.5 * (binEdges[1:] + binEdges[:-1])
-        res.append([x, y])
-        return [x, y]
-
+        normalisedY = []
+        for yVal in y:
+            normalisedY.append(yVal / sum(y))
+        return [x, normalisedY]
 
     def D4(self, sampleNum=100000):
         vertices = self.ms.mesh(0).vertex_matrix()
@@ -153,10 +152,12 @@ class FeaturesExtract:
                             res.append(vol**(1/3))
                         else:
                             nbMiss += 1
-        y, binEdges = np.histogram(res, bins=50)
+        y, binEdges = np.histogram(res, bins=Math.binsArray(0, (1/6)**(1/3), featureHistoBins[featureName.D4.value]))
         x = 0.5 * (binEdges[1:] + binEdges[:-1])
-        res.append([x, y])
-        return [x, y]
+        normalisedY =[]
+        for yVal in y:
+            normalisedY.append(yVal/sum(y))
+        return [x, normalisedY]
 
 
     def surfaceArea(self):
@@ -325,3 +326,17 @@ class FeaturesExtract:
         ps.register_surface_mesh("Before Mesh", self.ms.mesh(0).vertex_matrix(), self.ms.mesh(0).face_matrix())
         ps.register_surface_mesh("Bounding box", np.array(vertex), np.array(faces))
         ps.show()
+
+def euclidianDist(f1, f2):
+    sum = 0
+    weight = 0
+    for key in f1.keys():
+        if key[:2]=="A3" or key[:2]=="D1" or key[:2]=="D2" or key[:2]=="D3" or key[:2]=="D4":
+            weight += 1 / (len(featureName)*featureHistoBins[key[:2]])
+            sum += (1 / (len(featureName)*featureHistoBins[key[:2]])) * abs(f1[key] - f2[key]) ** 2
+        elif key != "Path" :
+            weight += 1 / len(featureName)
+            sum += 1 / len(featureName) * abs(f1[key] - f2[key]) ** 2
+    if weight > 1+1e-9 or weight < 1-1e-9:
+        raise Exception("Sum of weight not equal to 1 - Sum : "+ str(weight))
+    return sum**0.5, f1["Path"], f2["Path"]

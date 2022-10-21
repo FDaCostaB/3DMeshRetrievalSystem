@@ -231,9 +231,9 @@ class Mesh:
         ps.show()
 
 
-    def screenshot(self,saveTo, camLocation="diagonal"):
+    def screenshot(self,saveTo, camLocation="diagonal", fileName=None):
         os.makedirs('./screenshot', exist_ok=True)
-        fileName = os.path.splitext(os.path.basename(self.meshPath))[0]
+        if fileName is None: fileName = os.path.splitext(os.path.basename(self.meshPath))[0]
         psUI.setPolyscopeSetting(450, 450)
         ps.init()
         ps.set_ground_plane_mode("none")
