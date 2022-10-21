@@ -300,29 +300,34 @@ def query(path, k=5):
     return [(os.path.relpath(p2,'.'), dist) for dist, p1, p2 in distList[:k]]
 
 def displayQueryRes(queryShape, res):
-    fig, axs = plt.subplots(1, len(res)+1, figsize=(18, 4))
+    res.insert(0, (os.path.relpath(queryShape, '.'), 0))
+
+    nbOfLine = (len(res) // 5)
+    if len(res) % 5 > 0: nbOfLine += 1
+    fig, axs = plt.subplots(nbOfLine, 5, figsize=(18, 4*nbOfLine))
     i = 0
-    res.insert(0,(os.path.relpath(queryShape,'.'), 0))
+
     os.makedirs(os.path.join(os.path.realpath('output'), 'screenshot'), exist_ok=True)
     for path,dist in res:
         mesh = Mesh(os.path.realpath(path))
-        mesh.screenshot(os.path.join(os.path.realpath('output'), 'screenshot'), fileName='res'+str(i)+'jpg')
+        mesh.screenshot(os.path.join(os.path.realpath('output'), 'screenshot'), fileName='res'+str(i))
         i += 1
 
-    i = 0
-    FileIt = os.scandir(os.path.join(os.path.realpath('output'), 'screenshot'))
-    for screen in FileIt:
+    parDir = os.path.join(os.path.realpath('output'), 'screenshot')
+    for i in range(len(res)):
+        screen = os.path.join(os.path.realpath(parDir), 'res'+str(i)+'.jpg')
         fileType = os.path.splitext(os.path.realpath(screen))[1]
-        if screen.is_file() and fileType == ".jpg":
+        if os.path.isfile(screen) and fileType == ".jpg":
             image = mpimg.imread(os.path.realpath(screen))
-            axs[i].imshow(image)
-            axs[i].axis('off')
             if i==0:
-                axs[i].set_title('Query shape')
+                axs[0, 2].set_title('Query shape')
+                axs[0, 2].imshow(image)
             else:
-                axs[i].set_title(res[i][0] +'\n d='+str(res[i][1]))
+                axs[(i-1)//5+1, (i-1)%5].set_title(res[i][0] +'\n d='+str(res[i][1]))
+                axs[(i-1)//5+1, (i-1)%5].imshow(image)
             i += 1
-    FileIt.close()
+    for i in range(len(res)+4):
+        axs[i // 5, i % 5].axis('off')
     plt.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=0.95, wspace=0.5, hspace=0.05)
     plt.show()
 
