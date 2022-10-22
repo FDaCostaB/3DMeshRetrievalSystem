@@ -7,7 +7,7 @@ from math import pi
 import Math
 from featureName import featureName, featureDimension, featureHistoBins, featureWeight
 from parse import getFieldList, getIndexList
-from pyemd import emd
+from pyemd import emd # https://pypi.org/project/pyemd/
 from DebugLog import debugLog, debugLvl
 
 
