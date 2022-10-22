@@ -35,8 +35,9 @@ if len(sys.argv) == 3:
         db.drawCategoryFeatures(sys.argv[2])
 
     if sys.argv[1] == "query":
-        queryRes = db.query(sys.argv[2],k=20)
-        showRes = db.displayQueryRes(sys.argv[2], queryRes)
+        queryResEucl, queryResEMD = db.query(sys.argv[2],k=30)
+        db.displayQueryRes(sys.argv[2], queryResEucl)
+        db.displayQueryRes(sys.argv[2], queryResEMD)
 
 if len(sys.argv) == 2:
     if sys.argv[1] == "full-normalisation":

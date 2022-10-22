@@ -2,10 +2,13 @@ import numpy as np
 
 
 def dist(a, b):
-    x = 0
-    y = 1
-    z = 2
-    return ((b[x] - a[x])**2 + (b[y] - a[y])**2 + (b[z] - a[z])**2)**0.5
+    if len(a) != len(b):
+        raise("Dimmensionality is not the same")
+
+    res = 0
+    for i in range(len(a)):
+        res += (b[i] - a[i]) ** 2
+    return res**0.5
 
 
 def length(vect):
@@ -44,3 +47,28 @@ def vect(vectA, vectB):
 
 def binsArray(leftEdge,rightEdge,nbBins):
     return [leftEdge+i*(rightEdge-leftEdge)/(nbBins+1) for i in range(nbBins+1)]
+
+
+def matrixDist(length):
+    matrix = np.zeros( (length, length) )
+    for i in range(length):
+        for j in range(length):
+            matrix[i][j]=j-i
+    return matrix
+
+
+# http://robotics.stanford.edu/~scohen/research/emdg/emdg-cases.html#T1dL1
+# https://gist.github.com/jgraving/db2bf2fab8d623557e26eb363dd91af9
+def emd(histA, histB):
+    if len(histA) != len(histB):
+        raise ("Not same dimensionnality")
+    else:
+        n = len(histA)
+    histACumul = 0
+    histBCumul = 0
+    diff = 0
+    for i in range(n):
+        histACumul += histA[i]
+        histBCumul += histB[i]
+        diff += abs(histACumul - histBCumul) # Without abs the result are the same than pyemd lib given an epsilon=10e-2
+    return diff

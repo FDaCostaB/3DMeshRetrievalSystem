@@ -5,8 +5,9 @@ import polyscope as ps
 import numpy as np
 from math import pi
 import Math
-from featureName import featureName, featureDimension, featureHistoBins
+from featureName import featureName, featureDimension, featureHistoBins, featureWeight
 from parse import getFieldList, getIndexList
+from pyemd import emd
 from DebugLog import debugLog, debugLvl
 
 
@@ -328,15 +329,32 @@ class FeaturesExtract:
         ps.show()
 
 def euclidianDist(f1, f2):
-    sum = 0
+    sumDist = 0
     weight = 0
     for key in f1.keys():
         if key[:2]=="A3" or key[:2]=="D1" or key[:2]=="D2" or key[:2]=="D3" or key[:2]=="D4":
-            weight += 1 / (len(featureName)*featureHistoBins[key[:2]])
-            sum += (1 / (len(featureName)*featureHistoBins[key[:2]])) * abs(f1[key] - f2[key]) ** 2
+            weight += featureWeight[key[:2]] / (sum(list(featureWeight.values())) * featureHistoBins[key[:2]])
+            sumDist += (featureWeight[key[:2]] / (sum(list(featureWeight.values())) * featureHistoBins[key[:2]])) * abs(f1[key] - f2[key]) ** 2
         elif key != "Path" :
-            weight += 1 / len(featureName)
-            sum += 1 / len(featureName) * abs(f1[key] - f2[key]) ** 2
+            weight += featureWeight[key] / sum(list(featureWeight.values()))
+            sumDist += (featureWeight[key] / sum(list(featureWeight.values()))) * abs(f1[key] - f2[key]) ** 2
     if weight > 1+1e-9 or weight < 1-1e-9:
         raise Exception("Sum of weight not equal to 1 - Sum : "+ str(weight))
-    return sum**0.5, f1["Path"], f2["Path"]
+    return sumDist**0.5, f1["Path"], f2["Path"]
+
+def emDist(f1, f2):
+    sumScalar = 0
+    sumHisto = 0
+    for key in f1.keys():
+        if key[:2] not in ['A3','D1','D2','D3','D4'] and key != 'Path':
+            sumScalar += (featureWeight[key] / sum(list(featureWeight.values()))) * abs(f1[key] - f2[key]) ** 2
+    for histoName in ['A3', 'D1', 'D2', 'D3', 'D4']:
+        histf1 = np.array([list(f1.values())[i] for i in range(len(f1)) if list(f1.keys())[i][:2] == histoName])
+        histf2 = np.array([list(f2.values())[i] for i in range(len(f2)) if list(f2.keys())[i][:2] == histoName])
+        if len(histf1) != len(histf2):
+            raise ("Dimmensionality is not the same")
+        # dist = Math.matrixDist(len(histf1))
+        sumHisto += (featureWeight[key[:2]] / sum(list(featureWeight.values()))) * Math.emd(histf1, histf2)
+        # if emd(histf1, histf2, dist) != Math.emd(histf1, histf2):
+        #     print(str(emd(histf1, histf2, dist)) + ' - ' + str(Math.emd(histf1, histf2)))
+    return sumScalar ** 0.5 + sumHisto, f1["Path"], f2["Path"]

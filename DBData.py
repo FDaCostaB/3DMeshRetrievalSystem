@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import bisect
 import Math
-from Features import FeaturesExtract, euclidianDist
+from Features import FeaturesExtract, euclidianDist, emDist
 from parse import getFieldList, getIndexList
 from Mesh import Mesh
 from dataName import dataName, dataDimension
@@ -294,10 +294,13 @@ def query(path, k=5):
     for key in queryFeatures.keys():
         if key[:2] not in ['A3', 'D1', 'D2', 'D3', 'D4'] and key != 'Path':
             queryFeatures[key] = (queryFeatures[key] - avg[key]) / std[key]
-    distList = []
+    distListEucl = []
+    distListEMD = []
     for row in DB:
-        if row["Path"]!=queryFeatures["Path"]: bisect.insort(distList, euclidianDist(queryFeatures,row))
-    return [(os.path.relpath(p2,'.'), dist) for dist, p1, p2 in distList[:k]]
+        if row["Path"]!=queryFeatures["Path"]:
+            bisect.insort(distListEucl, euclidianDist(queryFeatures,row))
+            bisect.insort(distListEMD, emDist(queryFeatures,row))
+    return [(os.path.relpath(p2,'.'), dist) for dist, p1, p2 in distListEucl[:k]], [(os.path.relpath(p2,'.'), dist) for dist, p1, p2 in distListEMD[:k]]
 
 def displayQueryRes(queryShape, res):
     res.insert(0, (os.path.relpath(queryShape, '.'), 0))
