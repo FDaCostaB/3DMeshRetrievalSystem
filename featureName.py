@@ -24,7 +24,7 @@ featureDimension = { featureName.A3.value: 2, featureName.D1.value : 2, featureN
 featureHistoBins = { featureName.A3.value : 36, featureName.D1.value : 30, featureName.D2.value : 30,
                      featureName.D3.value : 30, featureName.D4.value : 30 }
 
-featureWeight = { featureName.A3.value: 1, featureName.D1.value : 0.5, featureName.D2.value : 1, featureName.D3.value : 1,
-                     featureName.D4.value : 1, featureName.SURFACE_AREA.value : 2, featureName.VOLUME.value : 2,
-                     featureName.COMPACTNESS.value : 2, featureName.SPHERICITY.value : 2, featureName.RECTANGULARITY.value : 2,
-                     featureName.DIAMETER.value : 2, featureName.ECCENTRICITY.value : 2, featureName.CENTROID.value : 0.5 }
+featureWeight = { featureName.A3.value: 2, featureName.D1.value : 0.5, featureName.D2.value : 2, featureName.D3.value : 2,
+                     featureName.D4.value : 2, featureName.SURFACE_AREA.value : 2, featureName.VOLUME.value : 2,
+                     featureName.COMPACTNESS.value : 3, featureName.SPHERICITY.value : 3, featureName.RECTANGULARITY.value : 3,
+                     featureName.DIAMETER.value : 3, featureName.ECCENTRICITY.value : 3, featureName.CENTROID.value : 0.5 }

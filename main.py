@@ -35,7 +35,7 @@ if len(sys.argv) == 3:
         db.drawCategoryFeatures(sys.argv[2])
 
     if sys.argv[1] == "query":
-        queryResEucl, queryResEMD = db.query(sys.argv[2],k=30)
+        queryResEucl, queryResEMD = db.query(sys.argv[2],k=15)
         db.displayQueryRes(sys.argv[2], queryResEucl)
         db.displayQueryRes(sys.argv[2], queryResEMD)
 
