@@ -67,6 +67,8 @@ def exportDBData(outputDir):
 def exportDBFeatures(outputDir):
     dbDir = "./"+outputDir+"/LabeledDB"
     meshesData = []
+    avgDict = {'Path':'avg'}
+    stdDict = {'Path':'std'}
     for dir in os.scandir(dbDir):
         if os.path.isdir(dir):
             FileIt = os.scandir(os.path.join(dbDir, dir.name))
@@ -78,6 +80,17 @@ def exportDBFeatures(outputDir):
                     data = mesh.featureFilter()
                     meshesData.append(data)
             FileIt.close()
+    for key in featureName:
+        if key.value[:2] not in ['A3', 'D1', 'D2', 'D3', 'D4'] and key.value != 'Path':
+            list = np.array([featureVect[key.value] for featureVect in meshesData])
+            avgDict[key.value] = float(list.mean())
+            stdDict[key.value] = float(list.std())
+    for featuresVect in meshesData:
+        for key in featureName:
+            if key.value[:2] not in ['A3', 'D1', 'D2', 'D3', 'D4'] and key.value != 'Path':
+                featuresVect[key.value] = (featuresVect[key.value] - avgDict[key.value]) / stdDict[key.value]
+    meshesData.append(avgDict)
+    meshesData.append(stdDict)
     csvExport("./output", 'features.csv', meshesData)
     return meshesData
 
@@ -272,18 +285,24 @@ def drawCategoryFeatures(functionsName):
 
 def parseFeatures():
     df = pd.read_csv(os.path.join(os.path.realpath("./output"), "features.csv"))
-    std = df.std(numeric_only=True)
-    avg = df.mean(numeric_only=True)
     DB = []
     line = {}
+    avg = {}
+    std = {}
+
     for i, row in df.iterrows():
         for colName in df.columns:
-            if colName[:7]!='Unnamed':
-                if colName[:2] in ['A3','D1','D2','D3','D4'] or colName == 'Path':
-                    line[colName] = row[colName]
-                else :
-                    line[colName] = (row[colName] - avg[colName])/std[colName]
-        DB.append(line)
+            if colName[:7]!='Unnamed' and row['Path'] not in ['avg', 'std']:
+                line[colName] = row[colName]
+            elif row['Path'] == 'avg':
+                for colName in df.columns:
+                    if colName[:2] not in ['A3', 'D1', 'D2', 'D3', 'D4'] and colName != 'Unnamed: 0':
+                        avg[colName] = row[colName]
+            elif row['Path'] == 'std':
+                for colName in df.columns:
+                    if colName[:2] not in ['A3', 'D1', 'D2', 'D3', 'D4'] and colName != 'Unnamed: 0':
+                        std[colName] = row[colName]
+        if len(line)>0: DB.append(line)
         line = {}
     return DB, avg, std
 def query(path, k=5):
@@ -294,6 +313,7 @@ def query(path, k=5):
     for key in queryFeatures.keys():
         if key[:2] not in ['A3', 'D1', 'D2', 'D3', 'D4'] and key != 'Path':
             queryFeatures[key] = (queryFeatures[key] - avg[key]) / std[key]
+
     distListEucl = []
     distListEMD = []
     for row in DB:

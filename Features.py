@@ -149,7 +149,7 @@ class FeaturesExtract:
                         if i0 == i1 or i0 == i2 or i0 == i3 or i1 == i2 or i1 == i3 or i2 == i3: break
                         v3 = vertices[i3]
                         vol = Math.tetrahedronVolume(Math.vect(v0, v1), Math.vect(v0, v2), Math.vect(v0, v3))
-                        if not np.isnan(vol**(1/3)):
+                        if not np.isnan(vol):
                             res.append(vol**(1/3))
                         else:
                             nbMiss += 1
