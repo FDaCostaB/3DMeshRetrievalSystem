@@ -1,4 +1,5 @@
 from enum import Enum
+from math import pi
 
 class featureName(Enum):
     A3 = "A3"
@@ -23,6 +24,9 @@ featureDimension = { featureName.A3.value: 2, featureName.D1.value : 2, featureN
 
 featureHistoBins = { featureName.A3.value : 36, featureName.D1.value : 30, featureName.D2.value : 30,
                      featureName.D3.value : 30, featureName.D4.value : 30 }
+
+histoUpperBound = { featureName.A3.value : pi, featureName.D1.value : 3**(1/2)/2, featureName.D2.value : 3**(1/2),
+                     featureName.D3.value : (3/4)**(1/2), featureName.D4.value : (1/6)**(1/3) }
 
 featureWeight = { featureName.A3.value: 2, featureName.D1.value : 0.5, featureName.D2.value : 2, featureName.D3.value : 2,
                      featureName.D4.value : 2, featureName.SURFACE_AREA.value : 2, featureName.VOLUME.value : 2,

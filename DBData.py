@@ -64,11 +64,9 @@ def exportDBData(outputDir):
     csvExport("./output", 'statistics.csv', meshesData)
     return meshesData
 
-def exportDBFeatures(outputDir):
+def exportDBFeatures(outputDir, normalisationType = "Standardisation"):
     dbDir = "./"+outputDir+"/LabeledDB"
     meshesData = []
-    avgDict = {'Path':'avg'}
-    stdDict = {'Path':'std'}
     for dir in os.scandir(dbDir):
         if os.path.isdir(dir):
             FileIt = os.scandir(os.path.join(dbDir, dir.name))
@@ -80,17 +78,10 @@ def exportDBFeatures(outputDir):
                     data = mesh.featureFilter()
                     meshesData.append(data)
             FileIt.close()
-    for key in featureName:
-        if key.value[:2] not in ['A3', 'D1', 'D2', 'D3', 'D4'] and key.value != 'Path':
-            list = np.array([featureVect[key.value] for featureVect in meshesData])
-            avgDict[key.value] = float(list.mean())
-            stdDict[key.value] = float(list.std())
-    for featuresVect in meshesData:
-        for key in featureName:
-            if key.value[:2] not in ['A3', 'D1', 'D2', 'D3', 'D4'] and key.value != 'Path':
-                featuresVect[key.value] = (featuresVect[key.value] - avgDict[key.value]) / stdDict[key.value]
-    meshesData.append(avgDict)
-    meshesData.append(stdDict)
+    if normalisationType == "Standardisation":
+        meshesData = Math.standardisation(meshesData)
+    elif normalisationType == "MinMax":
+        meshesData = Math.minMaxNormalisation(meshesData)
     csvExport("./output", 'features.csv', meshesData)
     return meshesData
 
@@ -283,12 +274,15 @@ def drawCategoryFeatures(functionsName):
     for funcName in functionsName:
         drawFeatures("./output/LabeledDB", funcName)
 
+
 def parseFeatures():
     df = pd.read_csv(os.path.join(os.path.realpath("./output"), "features.csv"))
     DB = []
     line = {}
     avg = {}
     std = {}
+    min = {}
+    max = {}
 
     for i, row in df.iterrows():
         for colName in df.columns:
@@ -302,17 +296,32 @@ def parseFeatures():
                 for colName in df.columns:
                     if colName[:2] not in ['A3', 'D1', 'D2', 'D3', 'D4'] and colName != 'Unnamed: 0':
                         std[colName] = row[colName]
+            elif row['Path'] == 'min':
+                for colName in df.columns:
+                    if colName[:2] not in ['A3', 'D1', 'D2', 'D3', 'D4'] and colName != 'Unnamed: 0':
+                        min[colName] = row[colName]
+            elif row['Path'] == 'max':
+                for colName in df.columns:
+                    if colName[:2] not in ['A3', 'D1', 'D2', 'D3', 'D4'] and colName != 'Unnamed: 0':
+                        max[colName] = row[colName]
         if len(line)>0: DB.append(line)
         line = {}
-    return DB, avg, std
+    if len(avg) > 0 and len(std) > 0 :
+        return DB, avg, std, "Standardisation"
+    elif len(min) > 0 and len(max) >0 :
+        return DB, min, max, "MinMax"
+
 def query(path, k=5):
     mesh = FeaturesExtract(os.path.realpath(path))
     queryFeatures = mesh.featureFilter()
-    DB, avg, std = parseFeatures()
+    DB, avg, std, normalisationType = parseFeatures()
 
     for key in queryFeatures.keys():
         if key[:2] not in ['A3', 'D1', 'D2', 'D3', 'D4'] and key != 'Path':
-            queryFeatures[key] = (queryFeatures[key] - avg[key]) / std[key]
+            if normalisationType == "Standardisation":
+                queryFeatures[key] = (queryFeatures[key] - avg[key]) / std[key]
+            elif normalisationType == "MinMax":
+                queryFeatures[key] = (queryFeatures[key] - min[key]) / (max[key]-min[key])
 
     distListEucl = []
     distListEMD = []

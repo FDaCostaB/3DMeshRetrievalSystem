@@ -29,7 +29,7 @@ if len(sys.argv) == 3:
         db.viewCategory(os.path.realpath('output/LabeledDB/'+sys.argv[2]), absolutePath=True, debug=True)
 
     if sys.argv[1] == "features":
-        db.exportDBFeatures(sys.argv[2])
+        db.exportDBFeatures(sys.argv[2], "Standardisation")
 
     if sys.argv[1] == "histogram-features":
         db.drawCategoryFeatures(sys.argv[2])
@@ -47,3 +47,7 @@ if len(sys.argv) == 2:
         for dir in os.scandir('output/LabeledDB'):
             if os.path.isdir(dir):
                 db.viewCategory(os.path.realpath(dir), debug=True)
+
+if len(sys.argv) == 4:
+    if sys.argv[1] == "features":
+        db.exportDBFeatures(sys.argv[2], sys.argv[2])
