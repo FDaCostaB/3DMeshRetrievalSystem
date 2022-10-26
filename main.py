@@ -25,6 +25,9 @@ if len(sys.argv) == 3:
         db.normCategory('initial/LabeledDB/'+sys.argv[2],'initial', 5000, 100)
         db.viewCategory('initial/LabeledDB/'+sys.argv[2], debug=True)
 
+    if sys.argv[1] == "full-normalisation":
+        db.normalise(sys.argv[2], 5000, 100)
+
     if sys.argv[1] == "view-category":
         db.viewCategory(os.path.realpath('output/LabeledDB/'+sys.argv[2]), absolutePath=True, debug=True)
 
@@ -40,8 +43,7 @@ if len(sys.argv) == 3:
         db.displayQueryRes(sys.argv[2], queryResEMD)
 
 if len(sys.argv) == 2:
-    if sys.argv[1] == "full-normalisation":
-        db.normalise(5000, 100)
+
 
     if sys.argv[1] == "view-category":
         for dir in os.scandir('output/LabeledDB'):
