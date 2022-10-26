@@ -32,19 +32,20 @@ class FeaturesExtract:
                 featureName.COMPACTNESS.value : self.compactness(), featureName.SPHERICITY.value : self.sphericity(),
                 featureName.RECTANGULARITY.value : self.rectangularity(), featureName.DIAMETER.value : self.diameter(),
                 featureName.ECCENTRICITY.value : self.eccentricity()}
-        A3 = self.A3()
+        nOfSamples = 1000
+        A3 = self.A3(nOfSamples)
         for i in range(len(A3[0])):
             res["A3-"+str(i)] = A3[1][i]
-        D1 = self.D1()
+        D1 = self.D1(nOfSamples)
         for i in range(len(D1[0])):
             res["D1-"+str(i)] = D1[1][i]
-        D2 = self.D2()
+        D2 = self.D2(nOfSamples)
         for i in range(len(D2[0])):
             res["D2-"+str(i)] = D2[1][i]
-        D3 = self.D3()
+        D3 = self.D3(nOfSamples)
         for i in range(len(D3[0])):
             res["D3-"+str(i)] = D3[1][i]
-        D4 = self.D4()
+        D4 = self.D4(nOfSamples)
         for i in range(len(D4[0])):
             res["D4-" + str(i)] = D4[1][i]
         return res
