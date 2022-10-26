@@ -93,7 +93,7 @@ def csvExport(outputDir, fileName, data):
 
 
 def normalise(path,expectedVerts, eps):
-    dbDir = os.path.realpath("./"+path+"/LabeledDB")
+    dbDir = os.path.realpath(path)
     for dir in os.scandir(dbDir):
         print(os.path.realpath(dir))
         normCategory(os.path.realpath(dir), os.path.dirname(dbDir), expectedVerts, eps)
