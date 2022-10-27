@@ -8,18 +8,18 @@ import Math
 from featureName import featureName, featureDimension, featureHistoBins, featureWeight, histoUpperBound
 from parse import getFieldList, getIndexList
 from pyemd import emd # https://pypi.org/project/pyemd/
-from DebugLog import debugLog, debugLvl
+from Settings import settings, settingsName
 
 
 class FeaturesExtract:
     def __init__(self, meshPath):
         fileType = os.path.splitext(os.path.realpath(meshPath))[1]
         if fileType == ".obj" or fileType == ".off" or fileType == ".ply":
-            self.meshPath = meshPath
+            self.fileName = os.path.basename(meshPath)
+            self.category = os.path.basename(os.path.dirname(meshPath))
             self.ms = pymeshlab.MeshSet()
             self.ms.load_new_mesh(meshPath)
             self.mesh = self.ms.current_mesh()
-            self.category = os.path.dirname(meshPath)
         else:
             raise Exception("Format not accepted")
 
@@ -28,11 +28,11 @@ class FeaturesExtract:
 # ---------------------------------------------------------------------------------------------- #
 
     def featureFilter(self):
-        res = {"Path" : self.meshPath,featureName.CENTROID.value : Math.length(self.centroid()), featureName.SURFACE_AREA.value : self.surfaceArea(), featureName.VOLUME.value : self.volume(),
+        res = { featureName.DIRNAME.value : self.category, featureName.FILENAME.value : self.fileName, featureName.CENTROID.value : Math.length(self.centroid()), featureName.SURFACE_AREA.value : self.surfaceArea(), featureName.VOLUME.value : self.volume(),
                 featureName.COMPACTNESS.value : self.compactness(), featureName.SPHERICITY.value : self.sphericity(),
                 featureName.RECTANGULARITY.value : self.rectangularity(), featureName.DIAMETER.value : self.diameter(),
                 featureName.ECCENTRICITY.value : self.eccentricity()}
-        nbOfSample = 1000
+        nbOfSample = settings[settingsName.nbSample.value]
         A3 = self.A3(nbOfSample)
         for i in range(len(A3[0])):
             res["A3-"+str(i)] = A3[1][i]
@@ -336,18 +336,18 @@ def euclidianDist(f1, f2):
         if key[:2]=="A3" or key[:2]=="D1" or key[:2]=="D2" or key[:2]=="D3" or key[:2]=="D4":
             weight += featureWeight[key[:2]] / (sum(list(featureWeight.values())) * featureHistoBins[key[:2]])
             sumDist += (featureWeight[key[:2]] / (sum(list(featureWeight.values())) * featureHistoBins[key[:2]])) * abs(f1[key] - f2[key]) ** 2
-        elif key != "Path" :
+        elif key not in ['File name', 'Folder name'] :
             weight += featureWeight[key] / sum(list(featureWeight.values()))
             sumDist += (featureWeight[key] / sum(list(featureWeight.values()))) * abs(f1[key] - f2[key]) ** 2
     if weight > 1+1e-9 or weight < 1-1e-9:
         raise Exception("Sum of weight not equal to 1 - Sum : "+ str(weight))
-    return sumDist**0.5, f1["Path"], f2["Path"]
+    return sumDist**0.5, os.path.join(f1[featureName.DIRNAME.value],f1[featureName.FILENAME.value]), os.path.join(f2[featureName.DIRNAME.value],f2[featureName.FILENAME.value])
 
 def emDist(f1, f2):
     sumScalar = 0
     sumHisto = 0
     for key in f1.keys():
-        if key[:2] not in ['A3','D1','D2','D3','D4'] and key != 'Path':
+        if key[:2] not in ['A3','D1','D2','D3','D4'] and key not in ['File name', 'Folder name']:
             sumScalar += (featureWeight[key] / sum(list(featureWeight.values()))) * abs(f1[key] - f2[key]) ** 2
     for histoName in ['A3', 'D1', 'D2', 'D3', 'D4']:
         histf1 = np.array([list(f1.values())[i] for i in range(len(f1)) if list(f1.keys())[i][:2] == histoName])
@@ -356,4 +356,4 @@ def emDist(f1, f2):
             raise ("Dimmensionality is not the same")
         dist = Math.matrixDist(len(histf1),histoName)
         sumHisto += (featureWeight[key[:2]] / sum(list(featureWeight.values()))) * emd(histf1, histf2, dist)
-    return sumScalar ** 0.5 + sumHisto, f1["Path"], f2["Path"]
+    return sumScalar ** 0.5 + sumHisto, os.path.join(f1[featureName.DIRNAME.value],f1[featureName.FILENAME.value]), os.path.join(f2[featureName.DIRNAME.value],f2[featureName.FILENAME.value])

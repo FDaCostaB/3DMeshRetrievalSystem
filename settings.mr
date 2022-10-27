@@ -1,0 +1,45 @@
+DATABASE FOLDER PATH=initial/LabeledDB
+
+OUTPUT FOLDER PATH=output
+
+#Options 'OFF' or 'OBJ' or 'PLY
+3D MESH EXTENSION=OBJ
+
+#Options 'jpg' or 'png'
+IMAGE MESH EXTENSION=jpg
+
+##Possible values : INT => 5000
+EXPECTED NUMBERS OF VERTICES=5000
+
+#Possible values : INT <= 100
+NB OF VERTICES EPSILON=100
+
+#Possible values : INT <= 20
+NB OF BINS DATA HISTOGRAM=20
+
+#Possible values : INT <= 36
+NB OF BINS A3=36
+
+#Possible values : INT <= 30
+NB OF BINS D1=30
+
+#Possible values : INT <= 30
+NB OF BINS D2=30
+
+#Possible values : INT <= 30
+NB OF BINS D3=30
+
+#Possible values : INT <= 30
+NB OF BINS D4=30
+
+#Possible values : INT <= 100000
+NUMBER OF MEASURE FOR HISTOGRAM FEATURES=100000
+
+#Possible values : 'Standardisation' or 'MinMax'
+NORMALISATION TYPE=Standardisation
+
+#Possible values : 'diagonal' or 'straight'
+POV SCREENSHOT=diagonal
+
+#Possible values : 'True' or 'False'
+DEBUG=False

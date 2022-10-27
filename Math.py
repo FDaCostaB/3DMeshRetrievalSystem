@@ -53,27 +53,27 @@ def matrixDist(length,histoName):
     return matrix
 
 def standardisation(meshesData):
-    avgDict = {'Path': 'avg'}
-    stdDict = {'Path': 'std'}
+    avgDict = {'File name': 'avg'}
+    stdDict = {'File name': 'std'}
     for key in featureName:
-        if key.value[:2] not in ['A3', 'D1', 'D2', 'D3', 'D4'] and key.value != 'Path':
+        if key.value[:2] not in ['A3', 'D1', 'D2', 'D3', 'D4'] and key.value not in ['File name', 'Folder name']:
             list = np.array([featureVect[key.value] for featureVect in meshesData])
             avgDict[key.value] = float(list.mean())
             stdDict[key.value] = float(list.std())
     for featuresVect in meshesData:
         for key in featureName:
-            if key.value[:2] not in ['A3', 'D1', 'D2', 'D3', 'D4'] and key.value != 'Path':
+            if key.value[:2] not in ['A3', 'D1', 'D2', 'D3', 'D4'] and key.value not in ['File name', 'Folder name']:
                 featuresVect[key.value] = (featuresVect[key.value] - avgDict[key.value]) / stdDict[key.value]
     meshesData.append(avgDict)
     meshesData.append(stdDict)
     return meshesData
 
 def minMaxNormalisation(meshesData):
-    minDict = {'Path': 'min'}
-    maxDict = {'Path': 'max'}
+    minDict = {'File name': 'min'}
+    maxDict = {'File name': 'max'}
     for featuresVect in meshesData:
         for key in featureName:
-            if key.value[:2] not in ['A3', 'D1', 'D2', 'D3', 'D4'] and key.value != 'Path':
+            if key.value[:2] not in ['A3', 'D1', 'D2', 'D3', 'D4'] and key.value not in ['File name', 'Folder name']:
                 list = np.array([featureVect[key.value] for featureVect in meshesData])
                 featuresVect[key.value] = (featuresVect[key.value] - min(list)) / (max(list) - min(list))
                 minDict[key.value] = min(list)
