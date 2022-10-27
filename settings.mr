@@ -3,7 +3,7 @@ DATABASE FOLDER PATH=initial/LabeledDB
 OUTPUT FOLDER PATH=output
 
 #Options 'OFF' or 'OBJ' or 'PLY
-3D MESH EXTENSION=OBJ
+3D MESH EXTENSION=OFF
 
 #Options 'jpg' or 'png'
 IMAGE MESH EXTENSION=jpg

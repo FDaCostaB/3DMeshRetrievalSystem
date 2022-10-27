@@ -46,5 +46,7 @@ if len(sys.argv) == 4:
 
     if sys.argv[1] == "query":
         queryResEucl, queryResEMD = db.query(sys.argv[2], k=int(sys.argv[3]))
-        db.displayQueryRes(sys.argv[2], queryResEucl)
-        db.displayQueryRes(sys.argv[2], queryResEMD)
+        db.exportQueryRes(sys.argv[2], queryResEucl)
+        db.exportQueryRes(sys.argv[2], queryResEMD)
+        # db.displayQueryRes(sys.argv[2], queryResEucl)
+        # db.displayQueryRes(sys.argv[2], queryResEMD)

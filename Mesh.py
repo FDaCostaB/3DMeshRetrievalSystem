@@ -214,7 +214,8 @@ class Mesh:
         ps.register_surface_mesh("After Mesh", self.ms.mesh(len(self.ms)-2).vertex_matrix(), self.ms.mesh(len(self.ms)-2).face_matrix())
         ps.show()
 
-    def saveMesh(self):
+    def saveMesh(self, path=None):
+        extension = settings[settingsName.meshExtension.value]
         # Same path with output instead of dbPath
         newPath = os.path.join(os.path.realpath(settings[settingsName.outputDBPath.value]),
                                os.path.relpath(self.meshPath, settings[settingsName.dbPath.value]))
@@ -223,7 +224,10 @@ class Mesh:
         os.makedirs(os.path.dirname(newPath), exist_ok=True)
 
         #Save the file in off format
-        self.ms.save_current_mesh(os.path.splitext(newPath)[0]+".off")
+        if path==None:
+            self.ms.save_current_mesh(os.path.splitext(newPath)[0]+"."+extension)
+        else:
+            self.ms.save_current_mesh(path+"."+extension)
 
     def render(self):
         psUI.setPolyscopeSetting(1280, 720)

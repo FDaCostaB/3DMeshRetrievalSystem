@@ -327,8 +327,13 @@ def parseFeatures():
         return DB, min, max, "MinMax"
 
 def query(path, k=5):
-    mesh = FeaturesExtract(os.path.realpath(path))
+    mesh = Mesh(os.path.realpath(path))
+    mesh.resample()
+    mesh.saveMesh(os.path.join(settings[settingsName.outputPath.value],"normaliseQueriedMesh"))
+    mesh = FeaturesExtract(os.path.join(settings[settingsName.outputPath.value],"normaliseQueriedMesh."+settings[settingsName.meshExtension.value]))
+
     queryFeatures = mesh.featureFilter()
+    queryFeatures[featureName.FILENAME.value] = os.path.basename(path)
     DB, norm1, norm2, normalisationType = parseFeatures()
 
     for key in queryFeatures.keys():
@@ -381,3 +386,32 @@ def displayQueryRes(queryShape, res):
     plt.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=0.95, wspace=0.5, hspace=0.05)
     plt.show()
 
+def exportQueryRes(queryShape, res):
+    fig, axs = plt.subplots(1, 5, figsize=(18, 4))
+    i = 1
+
+    os.makedirs(os.path.join(os.path.realpath(settings[settingsName.outputPath.value]), 'screenshot'), exist_ok=True)
+    mesh = Mesh(os.path.realpath(queryShape))
+    mesh.screenshot(os.path.join(os.path.realpath(settings[settingsName.outputPath.value]), 'screenshot'),fileName='res0')
+    for path,dist in res[:4]:
+        mesh = Mesh(os.path.join(os.path.realpath(settings[settingsName.outputDBPath.value]),path))
+        mesh.screenshot(os.path.join(os.path.realpath(settings[settingsName.outputPath.value]), 'screenshot'), fileName='res'+str(i))
+        i += 1
+
+    parDir = os.path.join(os.path.realpath(settings[settingsName.outputPath.value]), 'screenshot')
+    screen = os.path.join(os.path.realpath(parDir), 'res0.jpg')
+    image = mpimg.imread(os.path.realpath(screen))
+    axs[0].set_title('Query shape')
+    axs[0].imshow(image)
+    for i in range(1,5):
+        screen = os.path.join(os.path.realpath(parDir), 'res'+str(i)+'.jpg')
+        fileType = os.path.splitext(os.path.realpath(screen))[1]
+        if os.path.isfile(screen) and fileType == ".jpg":
+            image = mpimg.imread(os.path.realpath(screen))
+            axs[i%5].set_title(res[i-1][0] +'\n d='+str(res[i-1][1]))
+            axs[i%5].imshow(image)
+            i += 1
+    for i in range(5):
+        axs[i].axis('off')
+    plt.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=0.95, wspace=0.5, hspace=0.05)
+    plt.show()
