@@ -2,7 +2,7 @@
 
 Root:
     image_input: image_input
-    image_output: image_output
+    widget_list: widget_list
 
     BoxLayout:
         orientation: 'vertical'
@@ -20,10 +20,14 @@ Root:
             Image:
                 size_hint: 0.5, 1
                 id: image_input
-            Image:
-                id: image_output
+            GridLayout:
+                id: widget_list
                 size_hint: 0.5, 1
-                source: 'output/Sphericity.jpg'
+                cols: 3
+                padding: 20
+                spacing: 20
+
+
             
 
 <LoadDialog>:

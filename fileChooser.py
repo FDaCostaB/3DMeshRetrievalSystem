@@ -3,7 +3,12 @@ from kivy.uix.floatlayout import FloatLayout
 from kivy.factory import Factory
 from kivy.properties import ObjectProperty
 from kivy.uix.popup import Popup
-from Renderer import RendererApp
+from kivy.uix.gridlayout import GridLayout
+from kivy.uix.image import Image
+from kivy.clock import Clock
+import DBData as db
+from functools import partial
+from concurrent import futures
 
 import os
 
@@ -23,6 +28,7 @@ class Root(FloatLayout):
     loadfile = ObjectProperty(None)
     savefile = ObjectProperty(None)
     text_input = ObjectProperty(None)
+    layouts = []
 
     def dismiss_popup(self):
         self._popup.dismiss()
@@ -39,15 +45,26 @@ class Root(FloatLayout):
                             size_hint=(0.9, 0.9))
         self._popup.open()
 
-    def load(self, path, filename):
-        # with open(os.path.join(path, filename[0])) as stream:
-        self.text_input.text = os.path.join(path, filename[0])
-        self.image_output.source = os.path.join(path, filename[0])
-        # r = RendererApp()
-        # r.objPath = os.path.join(path,filename[0])
-        # r.run() 
+    def addImage(self, iPath):
+        self.widget_list.add_widget(Image(source = iPath, allow_stretch=True))
 
+    def addWidgets(self):
+        parDir = os.path.join(os.path.realpath('output'), 'screenshot')
+        for dir in os.scandir(parDir):
+            print(dir.name)
+            if dir.name == "query.jpg":
+                self.image_input.source = os.path.realpath(dir)
+            else:
+                self.addImage(os.path.realpath(dir))
+
+    def load(self, path, filename):
+        queryPath = os.path.join(path, filename[0])
+        with futures.ThreadPoolExecutor(max_workers=5) as executor:
+            future = executor.submit(db.query,queryPath,k=15)
+            queryResEucl, queryResEMD = future.result()
+            future = executor.submit(db.saveQueryRes,queryPath, queryResEucl)
         self.dismiss_popup()
+        self.addWidgets()
 
     def save(self, path, filename):
         with open(os.path.join(path, filename), 'w') as stream:
