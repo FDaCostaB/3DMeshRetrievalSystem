@@ -8,7 +8,7 @@ from DebugLog import debugLvl, debugLog
 from parse import getFieldList, getIndexList
 import polyscopeUI as psUI
 import Math
-
+from Settings import settings,settingsName
 
 class Mesh:
     def __init__(self, meshPath):
@@ -38,9 +38,12 @@ class Mesh:
                dataName.DIAGONAL.value : self.mesh.bounding_box().diagonal(), dataName.COMPONENTS_NUMBER.value : self.getNbComponents() }
         return res
 
-    def normaliseVertices(self, expectedVerts, eps):
+    def normaliseVertices(self):
         LIMIT = 5
         i = 0
+
+        expectedVerts = settings[settingsName.expectedVerts.value]
+        eps = settings[settingsName.epsVerts.value]
 
         oldStats = self.dataFilter()
         newStats = self.dataFilter()
@@ -140,12 +143,12 @@ class Mesh:
             self.printProperties()
             self.compare()
 
-    def resample(self, expectedVerts, eps, showComparison=False):
+    def resample(self, showComparison=False):
         if showComparison:
            self.printProperties()
 
         self.clean()
-        self.normaliseVertices(expectedVerts, eps)
+        self.normaliseVertices()
         self.normalise()
 
         if showComparison:
@@ -168,7 +171,6 @@ class Mesh:
         return len(colors)
 
     def getPCA(self):
-
         vertexMat = self.mesh.vertex_matrix()
         V = np.zeros((3, len(vertexMat)))
         V[0] = getIndexList(0,vertexMat)
@@ -212,15 +214,20 @@ class Mesh:
         ps.register_surface_mesh("After Mesh", self.ms.mesh(len(self.ms)-2).vertex_matrix(), self.ms.mesh(len(self.ms)-2).face_matrix())
         ps.show()
 
-    def saveMesh(self, originalPath):
-        # Same path with output instead of Model
-        newPath = os.path.join('./output',os.path.relpath(self.meshPath,originalPath))
+    def saveMesh(self, path=None):
+        extension = settings[settingsName.meshExtension.value]
+        # Same path with output instead of dbPath
+        newPath = os.path.join(os.path.realpath(settings[settingsName.outputDBPath.value]),
+                               os.path.relpath(self.meshPath, settings[settingsName.dbPath.value]))
 
         #Create parent dir if it doesn't exist
         os.makedirs(os.path.dirname(newPath), exist_ok=True)
 
         #Save the file in off format
-        self.ms.save_current_mesh(os.path.splitext(newPath)[0]+".off")
+        if path==None:
+            self.ms.save_current_mesh(os.path.splitext(newPath)[0]+"."+extension)
+        else:
+            self.ms.save_current_mesh(path+"."+extension)
 
     def render(self):
         psUI.setPolyscopeSetting(1280, 720)
@@ -231,7 +238,8 @@ class Mesh:
         ps.show()
 
 
-    def screenshot(self,saveTo, camLocation="diagonal", fileName=None):
+    def screenshot(self,saveTo, fileName=None):
+        camLocation = settings[settingsName.screenPOV.value]
         os.makedirs('./screenshot', exist_ok=True)
         if fileName is None: fileName = os.path.splitext(os.path.basename(self.meshPath))[0]
         psUI.setPolyscopeSetting(450, 450)

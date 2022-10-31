@@ -1,21 +1,20 @@
-import numpy as np
 import os
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import bisect
 import Math
 from Features import FeaturesExtract, euclidianDist, emDist
-from parse import getFieldList, getIndexList
+from parse import getIndexList
 from Mesh import Mesh
-from dataName import dataName, dataDimension
+from dataName import dataName
 from featureName import featureName, featureDimension
-from DebugLog import debugLvl, debugLog
-import numpy as np
 import pandas as pd
+from Settings import settings,settingsName
+
 
 # ---------------------------- STEP 2 ----------------------------------------#
-
-def plotHistogram(outputDir, df, feature, n_bins=20, size_x=10, size_y=7):
+def plotHistogram(df, feature, n_bins=20, size_x=10, size_y=7):
+    outputDir = os.path.join(os.path.realpath(settings[settingsName.outputPath.value]),"histograms")
     if feature == dataName.PCA.value:
         parsedValues = []
         pca = []
@@ -42,14 +41,19 @@ def plotHistogram(outputDir, df, feature, n_bins=20, size_x=10, size_y=7):
     else:
         plotValue(df, feature, outputDir, n_bins, size_x, size_y)
 
-def histograms(feature):
-    df = pd.read_csv(os.path.join(os.path.realpath("./output"),"statistics.csv"))
-    outputDir = os.path.join(os.path.realpath("./output"),"histograms")
-    os.makedirs(outputDir, exist_ok=True)
-    plotHistogram(outputDir, df, feature, 19)
 
-def exportDBData(outputDir):
-    dbDir = "./"+outputDir+"/LabeledDB"
+def histograms(feature):
+    df = pd.read_csv(os.path.join(os.path.realpath(settings[settingsName.outputPath.value]),"statistics.csv"))
+    outputDir = os.path.join(os.path.realpath(settings[settingsName.outputPath.value]),"histograms")
+    os.makedirs(outputDir, exist_ok=True)
+    plotHistogram(df, feature, 19)
+
+
+def exportDBData(fromOriginalDB):
+    if fromOriginalDB:
+        dbDir = os.path.realpath(settings[settingsName.dbPath.value])
+    else :
+        dbDir = os.path.realpath(settings[settingsName.outputDBPath.value])
     meshesData = []
     for dir in os.scandir(dbDir):
         if os.path.isdir(dir):
@@ -61,14 +65,14 @@ def exportDBData(outputDir):
                     data = mesh.dataFilter()
                     meshesData.append(data)
             FileIt.close()
-    csvExport("./output", 'statistics.csv', meshesData)
+    csvExport('statistics.csv', meshesData)
     return meshesData
 
-def exportDBFeatures(outputDir):
-    dbDir = "./"+outputDir+"/LabeledDB"
+
+def exportDBFeatures():
+    normalisationType = settings[settingsName.normType.value]
+    dbDir = os.path.realpath(settings[settingsName.outputDBPath.value])
     meshesData = []
-    avgDict = {'Path':'avg'}
-    stdDict = {'Path':'std'}
     for dir in os.scandir(dbDir):
         if os.path.isdir(dir):
             FileIt = os.scandir(os.path.join(dbDir, dir.name))
@@ -80,32 +84,28 @@ def exportDBFeatures(outputDir):
                     data = mesh.featureFilter()
                     meshesData.append(data)
             FileIt.close()
-    for key in featureName:
-        if key.value[:2] not in ['A3', 'D1', 'D2', 'D3', 'D4'] and key.value != 'Path':
-            list = np.array([featureVect[key.value] for featureVect in meshesData])
-            avgDict[key.value] = float(list.mean())
-            stdDict[key.value] = float(list.std())
-    for featuresVect in meshesData:
-        for key in featureName:
-            if key.value[:2] not in ['A3', 'D1', 'D2', 'D3', 'D4'] and key.value != 'Path':
-                featuresVect[key.value] = (featuresVect[key.value] - avgDict[key.value]) / stdDict[key.value]
-    meshesData.append(avgDict)
-    meshesData.append(stdDict)
-    csvExport("./output", 'features.csv', meshesData)
+    if normalisationType == "Standardisation":
+        print(normalisationType)
+        meshesData = Math.standardisation(meshesData)
+    elif normalisationType == "MinMax":
+        print(normalisationType)
+        meshesData = Math.minMaxNormalisation(meshesData)
+    csvExport('features.csv', meshesData)
     return meshesData
 
-def csvExport(outputDir, fileName, data):
-    filePath = os.path.join(os.path.realpath("./"+outputDir),fileName)
+
+def csvExport(fileName, data):
+    filePath = os.path.join(os.path.realpath(settings[settingsName.outputPath.value]),fileName)
     os.makedirs(os.path.dirname(filePath), exist_ok=True)
     df = pd.DataFrame(data, columns=data[0].keys())
     df.to_csv(filePath,mode="w")
 
 
-def normalise(expectedVerts, eps):
-    dbDir = "./initial/LabeledDB"
+def normalise():
+    dbDir = os.path.realpath(settings[settingsName.dbPath.value])
     for dir in os.scandir(dbDir):
-        print(os.path.realpath(dir))
-        normCategory(os.path.realpath(dir), os.path.dirname(dbDir), expectedVerts, eps)
+        print(dir.name)
+        normCategory(os.path.realpath(dir))
 
 
 def plotValue(df, feature, outputDir, n_bins=20, size_x=10, size_y=7):
@@ -126,7 +126,7 @@ def XYZplotValue(list, feature, outputDir,size_x=10, size_y=7):
     data = [getIndexList(0, list), getIndexList(1, list), getIndexList(2, list)]
     colors = ['blue', 'red', 'yellow']
     labels = ['x', 'y', 'z']
-    minVal = min(data[0] + data[1] + data[2])
+    minVal = 0
     maxVal = max(data[0] + data[1] + data[2])
     Lbins = [minVal+i*((maxVal-minVal)/10) for i in range(11)]
     axs.hist(data, Lbins, histtype='bar', stacked=False, fill=True, label=labels, alpha=0.8, color=colors, edgecolor="k")
@@ -137,33 +137,37 @@ def XYZplotValue(list, feature, outputDir,size_x=10, size_y=7):
     plt.savefig(outputDir+ "\\" +feature.lower()+".png")
 
 
-def normCategory(path, sourceDir, expectedVerts, eps):
+def normCategory(catName):
+    path = os.path.join(os.path.realpath(settings[settingsName.dbPath.value]),catName)
     if os.path.isdir(path):
         FileIt = os.scandir(path)
         for file in FileIt:
             fileType = os.path.splitext(os.path.realpath(file))[1]
             if fileType == ".obj" or fileType == ".off" or fileType == ".ply":
                 mesh = Mesh(os.path.realpath(file))
-                mesh.resample(expectedVerts, eps)
-                mesh.saveMesh(sourceDir)
+                mesh.resample()
+                mesh.saveMesh()
         FileIt.close()
 
 
-def viewCategory(path, camPos="diagonal", absolutePath=False, debug=False):
+def viewCategory(catName, fromOriginalDB):
+    debug = settings[settingsName.debug.value]
     totalMesh = 0
-    if absolutePath :
-        outPath = path
+    if fromOriginalDB :
+        outPath = os.path.join(settings[settingsName.dbPath.value], catName)
+        path = os.path.join(settings[settingsName.dbPath.value], catName)
     else :
-        outPath = os.path.join('./output', os.path.relpath(path, './initial'))
+        outPath = os.path.join(settings[settingsName.outputDBPath.value], catName)
+        path = os.path.join(settings[settingsName.outputDBPath.value], catName)
     os.makedirs(os.path.join(os.path.realpath(outPath),'screenshot'), exist_ok=True)
     if os.path.isdir(path):
-        FileIt = os.scandir(outPath)
+        FileIt = os.scandir(path)
         for file in FileIt:
             fileType = os.path.splitext(os.path.realpath(file))[1]
             if fileType == ".obj" or fileType == ".off" or fileType == ".ply":
                 totalMesh += 1
                 mesh = Mesh(os.path.realpath(file))
-                mesh.screenshot(os.path.join(os.path.realpath(outPath), 'screenshot'), camPos)
+                mesh.screenshot(os.path.join(os.path.realpath(outPath), 'screenshot'))
         FileIt.close()
 
     nbOfLine = (totalMesh//5)
@@ -178,7 +182,6 @@ def viewCategory(path, camPos="diagonal", absolutePath=False, debug=False):
                 image = mpimg.imread(os.path.realpath(screen))
                 axs[i//5, i%5].imshow(image)
                 axs[i//5, i%5].axis('off')
-                # axs[i//5, i%5].set_title(str(screen.name))
                 i+=1
         FileIt.close()
     plt.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=0.95, wspace=0, hspace=0.05)
@@ -186,8 +189,10 @@ def viewCategory(path, camPos="diagonal", absolutePath=False, debug=False):
     if(debug):
         plt.show()
 
+
 # ---------------------------- STEP 3 ----------------------------------------#
-def exportFeatures(dbDir, funcName):
+def exportFeatures(funcName):
+    dbDir = os.path.realpath(settings[settingsName.outputDBPath.value])
     dbHistValue = []
     dbScalarValue = []
     nbCat=0
@@ -227,10 +232,11 @@ def getFeaturesHistogram(path, funcName):
         return [acc, path]
 
 
-def drawFeatures(dbDir, funcName):
-    dbScalarValue, dbHistValue, nbCat = exportFeatures(dbDir, funcName)
-
+def drawFeatures(funcName):
+    dbScalarValue, dbHistValue, nbCat = exportFeatures(funcName)
+    dbDir= settings[settingsName.outputDBPath.value]
     nbOfLine = (nbCat // 3)
+    outputDir = os.path.join(os.path.realpath(settings[settingsName.outputPath.value]), "histograms")
     if nbCat % 3 > 0: nbOfLine += 1
     fig, axs = plt.subplots(nbOfLine, 3, figsize=(25, 35))
 
@@ -249,7 +255,7 @@ def drawFeatures(dbDir, funcName):
             axs[i // 3, i % 3].set_visible(False)
             i+=1
         plt.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=0.9, wspace=0.3, hspace=0.4)
-        plt.savefig("./output/" + funcName + ".jpg")
+        plt.savefig(os.path.join(outputDir,funcName + ".jpg"))
         plt.cla()
         plt.clf()
 
@@ -281,78 +287,105 @@ def drawCategoryFeatures(functionsName):
     else:
         functionsName = [functionsName]
     for funcName in functionsName:
-        drawFeatures("./output/LabeledDB", funcName)
+        drawFeatures(funcName)
+
 
 def parseFeatures():
-    df = pd.read_csv(os.path.join(os.path.realpath("./output"), "features.csv"))
+    df = pd.read_csv(os.path.join(os.path.realpath(settings[settingsName.outputPath.value]), "features.csv"))
     DB = []
     line = {}
     avg = {}
     std = {}
+    min = {}
+    max = {}
 
     for i, row in df.iterrows():
         for colName in df.columns:
-            if colName[:7]!='Unnamed' and row['Path'] not in ['avg', 'std']:
+            if colName[:7]!='Unnamed' and row['File name'] not in ['avg', 'std']:
                 line[colName] = row[colName]
-            elif row['Path'] == 'avg':
+            elif row['File name'] == 'avg':
                 for colName in df.columns:
                     if colName[:2] not in ['A3', 'D1', 'D2', 'D3', 'D4'] and colName != 'Unnamed: 0':
                         avg[colName] = row[colName]
-            elif row['Path'] == 'std':
+            elif row['File name'] == 'std':
                 for colName in df.columns:
                     if colName[:2] not in ['A3', 'D1', 'D2', 'D3', 'D4'] and colName != 'Unnamed: 0':
                         std[colName] = row[colName]
+            elif row['File name'] == 'min':
+                for colName in df.columns:
+                    if colName[:2] not in ['A3', 'D1', 'D2', 'D3', 'D4'] and colName != 'Unnamed: 0':
+                        min[colName] = row[colName]
+            elif row['File name'] == 'max':
+                for colName in df.columns:
+                    if colName[:2] not in ['A3', 'D1', 'D2', 'D3', 'D4'] and colName != 'Unnamed: 0':
+                        max[colName] = row[colName]
         if len(line)>0: DB.append(line)
         line = {}
-    return DB, avg, std
+    if len(avg) > 0 and len(std) > 0 :
+        return DB, avg, std, "Standardisation"
+    elif len(min) > 0 and len(max) > 0 :
+        return DB, min, max, "MinMax"
+
 def query(path, k=5):
-    mesh = FeaturesExtract(os.path.realpath(path))
+    mesh = Mesh(os.path.realpath(path))
+    mesh.resample()
+    mesh.saveMesh(os.path.join(settings[settingsName.outputPath.value],"normaliseQueriedMesh"))
+    mesh = FeaturesExtract(os.path.join(settings[settingsName.outputPath.value],"normaliseQueriedMesh."+settings[settingsName.meshExtension.value]))
+
     queryFeatures = mesh.featureFilter()
-    DB, avg, std = parseFeatures()
+    queryFeatures[featureName.FILENAME.value] = os.path.basename(path)
+    DB, norm1, norm2, normalisationType = parseFeatures()
 
     for key in queryFeatures.keys():
-        if key[:2] not in ['A3', 'D1', 'D2', 'D3', 'D4'] and key != 'Path':
-            queryFeatures[key] = (queryFeatures[key] - avg[key]) / std[key]
+        if key[:2] not in ['A3', 'D1', 'D2', 'D3', 'D4'] and key not in ['File name', 'Folder name']:
+            if normalisationType == "Standardisation":
+                avg=norm1
+                std=norm2
+                queryFeatures[key] = (queryFeatures[key] - avg[key]) / std[key]
+            elif normalisationType == "MinMax":
+                min = norm1
+                max = norm2
+                queryFeatures[key] = (queryFeatures[key] - min[key]) / (max[key]-min[key])
 
     distListEucl = []
     distListEMD = []
     for row in DB:
-        if row["Path"]!=queryFeatures["Path"]:
+        if row["File name"]!=queryFeatures["File name"] and row["File name"] not in ["avg","std","min","max"]:
             bisect.insort(distListEucl, euclidianDist(queryFeatures,row))
             bisect.insort(distListEMD, emDist(queryFeatures,row))
     return [(os.path.relpath(p2,'.'), dist) for dist, p1, p2 in distListEucl[:k]], [(os.path.relpath(p2,'.'), dist) for dist, p1, p2 in distListEMD[:k]]
 
 def displayQueryRes(queryShape, res):
-    res.insert(0, (os.path.relpath(queryShape, '.'), 0))
-
     nbOfLine = (len(res) // 5)
     if len(res) % 5 > 0: nbOfLine += 1
-    fig, axs = plt.subplots(nbOfLine, 5, figsize=(18, 4*nbOfLine))
-    i = 0
-
-    os.makedirs(os.path.join(os.path.realpath('output'), 'screenshot'), exist_ok=True)
+    fig, axs = plt.subplots(nbOfLine+1, 5, figsize=(18, 4*nbOfLine))
+    i = 1
+    os.makedirs(os.path.join(os.path.realpath(settings[settingsName.outputPath.value]), 'screenshot'), exist_ok=True)
+    mesh = Mesh(os.path.realpath(queryShape))
+    mesh.screenshot(os.path.join(os.path.realpath(settings[settingsName.outputPath.value]), 'screenshot'),fileName='res0')
     for path,dist in res:
-        mesh = Mesh(os.path.realpath(path))
-        mesh.screenshot(os.path.join(os.path.realpath('output'), 'screenshot'), fileName='res'+str(i))
+        mesh = Mesh(os.path.join(os.path.realpath(settings[settingsName.outputDBPath.value]),path))
+        mesh.screenshot(os.path.join(os.path.realpath(settings[settingsName.outputPath.value]), 'screenshot'), fileName='res'+str(i))
         i += 1
 
-    parDir = os.path.join(os.path.realpath('output'), 'screenshot')
-    for i in range(len(res)):
+    parDir = os.path.join(os.path.realpath(settings[settingsName.outputPath.value]), 'screenshot')
+    screen = os.path.join(os.path.realpath(parDir), 'res0.jpg')
+    image = mpimg.imread(os.path.realpath(screen))
+    axs[0, 2].set_title('Query shape')
+    axs[0, 2].imshow(image)
+    for i in range(1,len(res)+1):
         screen = os.path.join(os.path.realpath(parDir), 'res'+str(i)+'.jpg')
         fileType = os.path.splitext(os.path.realpath(screen))[1]
         if os.path.isfile(screen) and fileType == ".jpg":
             image = mpimg.imread(os.path.realpath(screen))
-            if i==0:
-                axs[0, 2].set_title('Query shape')
-                axs[0, 2].imshow(image)
-            else:
-                axs[(i-1)//5+1, (i-1)%5].set_title(res[i][0] +'\n d='+str(res[i][1]))
-                axs[(i-1)//5+1, (i-1)%5].imshow(image)
+            axs[(i-1)//5+1, (i-1)%5].set_title(res[i-1][0] +'\n d='+str(res[i-1][1]))
+            axs[(i-1)//5+1, (i-1)%5].imshow(image)
             i += 1
-    for i in range(len(res)+4):
+    for i in range(len(res)+5):
         axs[i // 5, i % 5].axis('off')
     plt.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=0.95, wspace=0.5, hspace=0.05)
     plt.show()
+
 
 def saveQueryRes(queryShape, res):
     os.makedirs(os.path.join(os.path.realpath('output'), 'screenshot'), exist_ok=True)
@@ -363,3 +396,34 @@ def saveQueryRes(queryShape, res):
         mesh = Mesh(os.path.realpath(path))
         mesh.screenshot(os.path.join(os.path.realpath('output'), 'screenshot'), fileName='res'+str(i))
         i += 1
+
+def exportQueryRes(queryShape, res):
+    fig, axs = plt.subplots(1, 5, figsize=(18, 4))
+    i = 1
+
+    os.makedirs(os.path.join(os.path.realpath(settings[settingsName.outputPath.value]), 'screenshot'), exist_ok=True)
+    mesh = Mesh(os.path.realpath(queryShape))
+    mesh.screenshot(os.path.join(os.path.realpath(settings[settingsName.outputPath.value]), 'screenshot'),fileName='res0')
+    for path,dist in res[:4]:
+        mesh = Mesh(os.path.join(os.path.realpath(settings[settingsName.outputDBPath.value]),path))
+        mesh.screenshot(os.path.join(os.path.realpath(settings[settingsName.outputPath.value]), 'screenshot'), fileName='res'+str(i))
+        i += 1
+
+    parDir = os.path.join(os.path.realpath(settings[settingsName.outputPath.value]), 'screenshot')
+    screen = os.path.join(os.path.realpath(parDir), 'res0.jpg')
+    image = mpimg.imread(os.path.realpath(screen))
+    axs[0].set_title('Query shape')
+    axs[0].imshow(image)
+    for i in range(1,5):
+        screen = os.path.join(os.path.realpath(parDir), 'res'+str(i)+'.jpg')
+        fileType = os.path.splitext(os.path.realpath(screen))[1]
+        if os.path.isfile(screen) and fileType == ".jpg":
+            image = mpimg.imread(os.path.realpath(screen))
+            axs[i%5].set_title(res[i-1][0] +'\n d='+str(res[i-1][1]))
+            axs[i%5].imshow(image)
+            i += 1
+    for i in range(5):
+        axs[i].axis('off')
+    plt.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=0.95, wspace=0.5, hspace=0.05)
+    plt.show()
+

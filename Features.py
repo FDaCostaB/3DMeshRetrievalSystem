@@ -5,21 +5,21 @@ import polyscope as ps
 import numpy as np
 from math import pi
 import Math
-from featureName import featureName, featureDimension, featureHistoBins, featureWeight
+from featureName import featureName, featureDimension, featureHistoBins, featureWeight, histoUpperBound
 from parse import getFieldList, getIndexList
 from pyemd import emd # https://pypi.org/project/pyemd/
-from DebugLog import debugLog, debugLvl
+from Settings import settings, settingsName
 
 
 class FeaturesExtract:
     def __init__(self, meshPath):
         fileType = os.path.splitext(os.path.realpath(meshPath))[1]
         if fileType == ".obj" or fileType == ".off" or fileType == ".ply":
-            self.meshPath = meshPath
+            self.fileName = os.path.basename(meshPath)
+            self.category = os.path.basename(os.path.dirname(meshPath))
             self.ms = pymeshlab.MeshSet()
             self.ms.load_new_mesh(meshPath)
             self.mesh = self.ms.current_mesh()
-            self.category = os.path.dirname(meshPath)
         else:
             raise Exception("Format not accepted")
 
@@ -28,24 +28,25 @@ class FeaturesExtract:
 # ---------------------------------------------------------------------------------------------- #
 
     def featureFilter(self):
-        res = {"Path" : self.meshPath,featureName.CENTROID.value : Math.length(self.centroid()), featureName.SURFACE_AREA.value : self.surfaceArea(), featureName.VOLUME.value : self.volume(),
+        res = { featureName.DIRNAME.value : self.category, featureName.FILENAME.value : self.fileName, featureName.CENTROID.value : Math.length(self.centroid()), featureName.SURFACE_AREA.value : self.surfaceArea(), featureName.VOLUME.value : self.volume(),
                 featureName.COMPACTNESS.value : self.compactness(), featureName.SPHERICITY.value : self.sphericity(),
                 featureName.RECTANGULARITY.value : self.rectangularity(), featureName.DIAMETER.value : self.diameter(),
                 featureName.ECCENTRICITY.value : self.eccentricity()}
-        nOfSamples = 1000
-        A3 = self.A3(nOfSamples)
+
+        nbOfSample = settings[settingsName.nbSample.value]
+        A3 = self.A3(nbOfSample)
         for i in range(len(A3[0])):
             res["A3-"+str(i)] = A3[1][i]
-        D1 = self.D1(nOfSamples)
+        D1 = self.D1(nbOfSample)
         for i in range(len(D1[0])):
             res["D1-"+str(i)] = D1[1][i]
-        D2 = self.D2(nOfSamples)
+        D2 = self.D2(nbOfSample)
         for i in range(len(D2[0])):
             res["D2-"+str(i)] = D2[1][i]
-        D3 = self.D3(nOfSamples)
+        D3 = self.D3(nbOfSample)
         for i in range(len(D3[0])):
             res["D3-"+str(i)] = D3[1][i]
-        D4 = self.D4(nOfSamples)
+        D4 = self.D4(nbOfSample)
         for i in range(len(D4[0])):
             res["D4-" + str(i)] = D4[1][i]
         return res
@@ -59,14 +60,14 @@ class FeaturesExtract:
             v0 = vertices[i0]
             for j in range(upperbound):
                 i1 = random.randint(0, len(vertices) - 1)
-                if i0==i1: break
+                if i0==i1: continue
                 v1 = vertices[i1]
                 for k in range(upperbound):
                     i2 = random.randint(0, len(vertices) - 1)
-                    if i0 == i1 or i0 == i2 or i1 == i2: break
+                    if i0 == i1 or i0 == i2 or i1 == i2: continue
                     v2 = vertices[i2]
                     res.append(Math.angle(Math.vect(v0, v1), Math.vect(v0, v2)))
-        y, binEdges = np.histogram(res, bins=Math.binsArray(0, pi, featureHistoBins[featureName.A3.value]))
+        y, binEdges = np.histogram(res, range=(0,histoUpperBound[featureName.A3.value]), bins=featureHistoBins[featureName.A3.value])
         x = 0.5 * (binEdges[1:] + binEdges[:-1])
         normalisedY = []
         for yVal in y:
@@ -80,7 +81,7 @@ class FeaturesExtract:
             i0 = random.randint(0, len(vertices) - 1)
             v0 = vertices[i0]
             res.append(Math.length(v0))
-        y, binEdges = np.histogram(res, bins=Math.binsArray(0, 3**(1/2)/2, featureHistoBins[featureName.D1.value]))
+        y, binEdges = np.histogram(res, range=(0,histoUpperBound[featureName.D1.value]), bins=featureHistoBins[featureName.D1.value])
         x = 0.5 * (binEdges[1:] + binEdges[:-1])
         normalisedY = []
         for yVal in y:
@@ -96,10 +97,10 @@ class FeaturesExtract:
             v0 = vertices[i0]
             for j in range(upperbound):
                 i1 = random.randint(0, len(vertices) - 1)
-                if i0 == i1: break
+                if i0 == i1: continue
                 v1 = vertices[i1]
                 res.append(Math.dist(v0, v1))
-        y, binEdges = np.histogram(res, bins=Math.binsArray(0, 3**(1/2), featureHistoBins[featureName.D2.value]))
+        y, binEdges = np.histogram(res, range=(0,histoUpperBound[featureName.D2.value]), bins=featureHistoBins[featureName.D2.value])
         x = 0.5 * (binEdges[1:] + binEdges[:-1])
         normalisedY = []
         for yVal in y:
@@ -115,14 +116,14 @@ class FeaturesExtract:
             v0 = vertices[i0]
             for j in range(upperbound):
                 i1 = random.randint(0, len(vertices) - 1)
-                if i0 == i1: break
+                if i0 == i1: continue
                 v1 = vertices[i1]
                 for k in range(upperbound):
                     i2 = random.randint(0, len(vertices) - 1)
-                    if i0 == i1 or i0 == i2 or i1 == i2: break
+                    if i0 == i1 or i0 == i2 or i1 == i2: continue
                     v2 = vertices[i2]
                     res.append(Math.triangleAreaVector(Math.vect(v0, v1), Math.vect(v0, v2)) ** 0.5)
-        y, binEdges = np.histogram(res, bins=Math.binsArray(0, (3/4)**(1/2), featureHistoBins[featureName.D3.value]))
+        y, binEdges = np.histogram(res, range=(0,histoUpperBound[featureName.D3.value]), bins=featureHistoBins[featureName.D3.value])
         x = 0.5 * (binEdges[1:] + binEdges[:-1])
         normalisedY = []
         for yVal in y:
@@ -139,22 +140,22 @@ class FeaturesExtract:
             v0 = vertices[i0]
             for j in range(upperbound):
                 i1 = random.randint(0, len(vertices) - 1)
-                if i0 == i1: break
+                if i0 == i1: continue
                 v1 = vertices[i1]
                 for k in range(upperbound):
                     i2 = random.randint(0, len(vertices) - 1)
-                    if i0 == i1 or i0 == i2 or i1 == i2: break
+                    if i0 == i1 or i0 == i2 or i1 == i2: continue
                     v2 = vertices[i2]
                     for l in range(upperbound):
                         i3 = random.randint(0, len(vertices) - 1)
-                        if i0 == i1 or i0 == i2 or i0 == i3 or i1 == i2 or i1 == i3 or i2 == i3: break
+                        if i0 == i1 or i0 == i2 or i0 == i3 or i1 == i2 or i1 == i3 or i2 == i3: continue
                         v3 = vertices[i3]
                         vol = Math.tetrahedronVolume(Math.vect(v0, v1), Math.vect(v0, v2), Math.vect(v0, v3))
                         if not np.isnan(vol):
                             res.append(vol**(1/3))
                         else:
                             nbMiss += 1
-        y, binEdges = np.histogram(res, bins=Math.binsArray(0, (1/6)**(1/3), featureHistoBins[featureName.D4.value]))
+        y, binEdges = np.histogram(res, range=(0,histoUpperBound[featureName.D4.value]), bins=featureHistoBins[featureName.D4.value])
         x = 0.5 * (binEdges[1:] + binEdges[:-1])
         normalisedY =[]
         for yVal in y:
@@ -336,26 +337,24 @@ def euclidianDist(f1, f2):
         if key[:2]=="A3" or key[:2]=="D1" or key[:2]=="D2" or key[:2]=="D3" or key[:2]=="D4":
             weight += featureWeight[key[:2]] / (sum(list(featureWeight.values())) * featureHistoBins[key[:2]])
             sumDist += (featureWeight[key[:2]] / (sum(list(featureWeight.values())) * featureHistoBins[key[:2]])) * abs(f1[key] - f2[key]) ** 2
-        elif key != "Path" :
+        elif key not in ['File name', 'Folder name'] :
             weight += featureWeight[key] / sum(list(featureWeight.values()))
             sumDist += (featureWeight[key] / sum(list(featureWeight.values()))) * abs(f1[key] - f2[key]) ** 2
     if weight > 1+1e-9 or weight < 1-1e-9:
         raise Exception("Sum of weight not equal to 1 - Sum : "+ str(weight))
-    return sumDist**0.5, f1["Path"], f2["Path"]
+    return sumDist**0.5, os.path.join(f1[featureName.DIRNAME.value],f1[featureName.FILENAME.value]), os.path.join(f2[featureName.DIRNAME.value],f2[featureName.FILENAME.value])
 
 def emDist(f1, f2):
     sumScalar = 0
     sumHisto = 0
     for key in f1.keys():
-        if key[:2] not in ['A3','D1','D2','D3','D4'] and key != 'Path':
+        if key[:2] not in ['A3','D1','D2','D3','D4'] and key not in ['File name', 'Folder name']:
             sumScalar += (featureWeight[key] / sum(list(featureWeight.values()))) * abs(f1[key] - f2[key]) ** 2
     for histoName in ['A3', 'D1', 'D2', 'D3', 'D4']:
         histf1 = np.array([list(f1.values())[i] for i in range(len(f1)) if list(f1.keys())[i][:2] == histoName])
         histf2 = np.array([list(f2.values())[i] for i in range(len(f2)) if list(f2.keys())[i][:2] == histoName])
         if len(histf1) != len(histf2):
             raise ("Dimmensionality is not the same")
-        # dist = Math.matrixDist(len(histf1))
-        sumHisto += (featureWeight[key[:2]] / sum(list(featureWeight.values()))) * Math.emd(histf1, histf2)
-        # if emd(histf1, histf2, dist) != Math.emd(histf1, histf2):
-        #     print(str(emd(histf1, histf2, dist)) + ' - ' + str(Math.emd(histf1, histf2)))
-    return sumScalar ** 0.5 + sumHisto, f1["Path"], f2["Path"]
+        dist = Math.matrixDist(len(histf1),histoName)
+        sumHisto += (featureWeight[key[:2]] / sum(list(featureWeight.values()))) * emd(histf1, histf2, dist)
+    return sumScalar ** 0.5 + sumHisto, os.path.join(f1[featureName.DIRNAME.value],f1[featureName.FILENAME.value]), os.path.join(f2[featureName.DIRNAME.value],f2[featureName.FILENAME.value])
