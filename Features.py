@@ -32,6 +32,7 @@ class FeaturesExtract:
                 featureName.COMPACTNESS.value : self.compactness(), featureName.SPHERICITY.value : self.sphericity(),
                 featureName.RECTANGULARITY.value : self.rectangularity(), featureName.DIAMETER.value : self.diameter(),
                 featureName.ECCENTRICITY.value : self.eccentricity()}
+
         nbOfSample = settings[settingsName.nbSample.value]
         A3 = self.A3(nbOfSample)
         for i in range(len(A3[0])):

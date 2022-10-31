@@ -386,6 +386,17 @@ def displayQueryRes(queryShape, res):
     plt.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=0.95, wspace=0.5, hspace=0.05)
     plt.show()
 
+
+def saveQueryRes(queryShape, res):
+    os.makedirs(os.path.join(os.path.realpath('output'), 'screenshot'), exist_ok=True)
+    mesh = Mesh(os.path.realpath(os.path.relpath(queryShape, '.')))
+    mesh.screenshot(os.path.join(os.path.realpath('output'), 'screenshot'), fileName='query')
+    i = 0
+    for path,dist in res:
+        mesh = Mesh(os.path.realpath(path))
+        mesh.screenshot(os.path.join(os.path.realpath('output'), 'screenshot'), fileName='res'+str(i))
+        i += 1
+
 def exportQueryRes(queryShape, res):
     fig, axs = plt.subplots(1, 5, figsize=(18, 4))
     i = 1
@@ -415,3 +426,4 @@ def exportQueryRes(queryShape, res):
         axs[i].axis('off')
     plt.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=0.95, wspace=0.5, hspace=0.05)
     plt.show()
+
