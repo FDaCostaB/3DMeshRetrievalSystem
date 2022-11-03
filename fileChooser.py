@@ -9,6 +9,7 @@ from kivy.clock import Clock
 import DBData as db
 from functools import partial
 from concurrent import futures
+from Settings import readSettings, settings, settingsName
 
 import os
 
@@ -83,4 +84,5 @@ Factory.register('SaveDialog', cls=SaveDialog)
 
 
 if __name__ == '__main__':
+    readSettings()
     Editor().run()

@@ -393,8 +393,8 @@ def saveQueryRes(queryShape, res):
     mesh.screenshot(os.path.join(os.path.realpath('output'), 'screenshot'), fileName='query')
     i = 0
     for path,dist in res:
-        mesh = Mesh(os.path.realpath(path))
-        mesh.screenshot(os.path.join(os.path.realpath('output'), 'screenshot'), fileName='res'+str(i))
+        mesh = Mesh(os.path.join(os.path.realpath(settings[settingsName.outputDBPath.value]),path))
+        mesh.screenshot(os.path.join(os.path.realpath(settings[settingsName.outputPath.value]), 'screenshot'), fileName='res'+str(i))
         i += 1
 
 def exportQueryRes(queryShape, res):
