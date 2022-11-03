@@ -6,6 +6,7 @@ from kivy.uix.popup import Popup
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.image import Image
 from kivy.clock import Clock
+from kivy.uix.label import Label
 import DBData as db
 from functools import partial
 from concurrent import futures
@@ -46,26 +47,33 @@ class Root(FloatLayout):
                             size_hint=(0.9, 0.9))
         self._popup.open()
 
-    def addImage(self, iPath):
-        self.widget_list.add_widget(Image(source = iPath, allow_stretch=True))
+    def addImage(self, iPath, distance):
+        layout = GridLayout(cols=1)
+        layout.add_widget(Image(source = iPath, allow_stretch=True,height=200))
+        layout.add_widget(Label(text=distance,height=10))
+        self.widget_list.add_widget(layout)
 
-    def addWidgets(self):
+    def addWidgets(self,results):
         parDir = os.path.join(os.path.realpath('output'), 'screenshot')
         for dir in os.scandir(parDir):
             print(dir.name)
             if dir.name == "query.jpg":
                 self.image_input.source = os.path.realpath(dir)
             else:
-                self.addImage(os.path.realpath(dir))
+                n = dir.name.split(".")[0]
+                self.addImage(os.path.realpath(dir),results[n])
 
     def load(self, path, filename):
         queryPath = os.path.join(path, filename[0])
+        k = 15
         with futures.ThreadPoolExecutor(max_workers=5) as executor:
-            future = executor.submit(db.query,queryPath,k=15)
+            future = executor.submit(db.query,queryPath,k)
             queryResEucl, queryResEMD = future.result()
             future = executor.submit(db.saveQueryRes,queryPath, queryResEucl)
+            imageDist = future.result()
         self.dismiss_popup()
-        self.addWidgets()
+        print(imageDist)
+        self.addWidgets(imageDist)
 
     def save(self, path, filename):
         with open(os.path.join(path, filename), 'w') as stream:
