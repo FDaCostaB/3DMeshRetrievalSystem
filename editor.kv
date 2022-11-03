@@ -3,18 +3,25 @@
 Root:
     image_input: image_input
     widget_list: widget_list
+    slider: slider
 
     BoxLayout:
         orientation: 'vertical'
         BoxLayout:
             size_hint_y: None
-            height: 30
+            height: 50
             Button:
                 text: 'Load'
                 on_release: root.show_load()
-            Button:
-                text: 'Save'
-                on_release: root.show_save()
+            BoxLayout:
+                Label:
+                    text: "K:" + str(slider.value)
+                Slider:
+                    id: slider
+                    min: 1
+                    max: 20
+                    step: 1
+                    orientation: 'horizontal'
 
         BoxLayout:
             Image:

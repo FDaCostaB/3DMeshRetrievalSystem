@@ -65,7 +65,7 @@ class Root(FloatLayout):
 
     def load(self, path, filename):
         queryPath = os.path.join(path, filename[0])
-        k = 15
+        k = int(self.slider.value)
         with futures.ThreadPoolExecutor(max_workers=5) as executor:
             future = executor.submit(db.query,queryPath,k)
             queryResEucl, queryResEMD = future.result()
@@ -90,7 +90,11 @@ Factory.register('Root', cls=Root)
 Factory.register('LoadDialog', cls=LoadDialog)
 Factory.register('SaveDialog', cls=SaveDialog)
 
-
+def cleanDir():
+        parDir = os.path.join(os.path.realpath('output'), 'screenshot')
+        for dir in os.scandir(parDir):
+            os.remove(dir)
 if __name__ == '__main__':
     readSettings()
+    cleanDir()
     Editor().run()
