@@ -7,7 +7,7 @@ from Settings import settings, settingsName
 
 def read_data_model():
     df = pd.read_csv(os.path.join(os.path.realpath(settings[settingsName.outputPath.value]), "catAvg.csv"))
-    catFeatMat = np.zeros((df.shape[0],df.shape[1]-2))
+    catDistMat = np.zeros((df.shape[0],df.shape[1]-2))
     colLabel = []
     newRowLabel = []
     for i, row in df.iterrows():
@@ -15,27 +15,27 @@ def read_data_model():
         j = 0
         for colName in df.columns:
             if colName!='Unnamed: 0' and colName!='Pair':
-                catFeatMat[i][j] = round(row[colName]*10,5)
+                catDistMat[i][j] = round(row[colName]*10,5)
                 if i==0: colLabel.append(colName)
                 j+=1
-    constraintCoeffs = np.zeros((catFeatMat.shape[0], catFeatMat.shape[1]+catFeatMat.shape[0]))
+    constraintCoeffs = np.zeros((catDistMat.shape[0], catDistMat.shape[1]+catDistMat.shape[0]))
 
     data = {}
     data['bounds'] = np.zeros(constraintCoeffs.shape[0])
-    for i in range(catFeatMat.shape[0]):
-        for j in range(catFeatMat.shape[1]):
-            constraintCoeffs[i][j] = catFeatMat[i, j]
+    for i in range(catDistMat.shape[0]):
+        for j in range(catDistMat.shape[1]):
+            constraintCoeffs[i][j] = catDistMat[i, j]
     for l in range(len(newRowLabel)):
-        constraintCoeffs[l, l+catFeatMat.shape[1]] = -1
+        constraintCoeffs[l, l+catDistMat.shape[1]] = -1
         colLabel.append(newRowLabel[l])
     data['constraint_coeffs'] = constraintCoeffs
 
     data['obj_coeffs'] = np.ones(constraintCoeffs.shape[1])
-    for i in range(catFeatMat.shape[1]):
+    for i in range(catDistMat.shape[1]):
         data['obj_coeffs'][i] = 0
     data['obj_coeffs'][len(data['obj_coeffs'])-1]=1
-    for i in range(catFeatMat.shape[1],constraintCoeffs.shape[1]):
-        if newRowLabel[i-catFeatMat.shape[1]].split('-')[0]==newRowLabel[i-catFeatMat.shape[1]].split('-')[1]:
+    for i in range(catDistMat.shape[1],constraintCoeffs.shape[1]):
+        if newRowLabel[i-catDistMat.shape[1]].split('-')[0]==newRowLabel[i-catDistMat.shape[1]].split('-')[1]:
             data['obj_coeffs'][i]*=-9 # 171/19 unbias the difference between the number of same class comparison (19) and different class comparison (2 chosen in 19)
 
     data['num_vars'] = constraintCoeffs.shape[1]

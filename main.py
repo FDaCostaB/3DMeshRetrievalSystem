@@ -4,6 +4,7 @@ import os
 import LP as lp
 from Mesh import Mesh
 from Settings import readSettings, settings, settingsName
+from tsne import tsne
 
 readSettings()
 files = ['output/NormaliseDB/Airplane/70.off',
@@ -79,6 +80,11 @@ if len(sys.argv) == 2:
         db.showQueriesRes(resEucl,"resEucl")
         db.showQueriesRes(resEmd,"resEMD")
 
+    if sys.argv[1] == "tsne":
+        distMatrix, rowLabel = db.parseDistMatrix("emd")
+        tsne(distMatrix, rowLabel, 1000)
+
+
 if len(sys.argv) == 4:
     if sys.argv[1] == "category-normalisation":
         db.normCategory(sys.argv[2])
@@ -91,5 +97,7 @@ if len(sys.argv) == 4:
         queryResEucl, queryResEMD = db.query(sys.argv[2], k=int(sys.argv[3]))
         db.exportQueryRes(sys.argv[2], queryResEucl)
         db.exportQueryRes(sys.argv[2], queryResEMD)
-        # db.displayQueryRes(sys.argv[2], queryResEucl)
-        # db.displayQueryRes(sys.argv[2], queryResEMD)
+
+    if sys.argv[1] == "annQuery":
+        queryRes = db.annQuery(sys.argv[2], k=int(sys.argv[3]))
+        db.exportQueryRes(sys.argv[2], queryResEucl)

@@ -9,6 +9,7 @@ from parse import getIndexList
 from Mesh import Mesh
 from dataName import dataName
 from featureName import featureName, featureDimension
+from scipy.spatial import KDTree
 import pandas as pd
 from Settings import settings,settingsName
 
@@ -334,13 +335,13 @@ def exportDistanceMatrix(distanceFunc):
     i =0
     for obj1 in DB:
         row = {}
-        row['OBJ1']=obj1["File name"]
+        row['OBJ1']=obj1["Folder name"]+'/'+obj1["File name"]
         for obj2 in DB:
             if obj1["File name"] not in ["avg","std","min","max"] and obj2["File name"] not in ["avg","std","min","max"]:
                 if distanceFunc.lower()=="emd":
-                    row[obj2["File name"]] = emDist(obj1,obj2)[0]
+                    row[obj2["Folder name"]+'/'+obj2["File name"]] = emDist(obj1,obj2)[0]
                 elif distanceFunc.lower()=="euclidean":
-                    row[obj2["File name"]] = euclidianDist(obj1, obj2)[0]
+                    row[obj2["Folder name"]+'/'+obj2["File name"]] = euclidianDist(obj1, obj2)[0]
         res.append(row)
         i+=1
         if i%20==0 : print(str(int(i/380*100))+" %")
@@ -349,6 +350,26 @@ def exportDistanceMatrix(distanceFunc):
     elif distanceFunc.lower() == "euclidean":
         csvExport('distanceEucl.csv', res)
     return res
+
+
+def parseDistMatrix(distanceFunc):
+    if distanceFunc.lower() == "emd":
+        df = pd.read_csv(os.path.join(os.path.realpath(settings[settingsName.outputPath.value]), "distanceEMD.csv"))
+    elif distanceFunc.lower() == "euclidean":
+        df = pd.read_csv(os.path.join(os.path.realpath(settings[settingsName.outputPath.value]), "distanceEucl.csv"))
+    else:
+        return
+    rowLabel = []
+    distMatrix = np.zeros((df.shape[0],df.shape[0]))
+    for i, row in df.iterrows():
+        j = 0
+        rowLabel.append(row['OBJ1'])
+        for colName in df.columns:
+            if colName[:7]!='Unnamed' and colName != 'OBJ1':
+                distMatrix[i][j] = row[colName]
+                j+=1
+    return distMatrix, rowLabel
+
 
 def exportStat(distanceFunc):
     DB, norm1, norm2, normalisationType = parseFeatures()
@@ -390,6 +411,37 @@ def exportStat(distanceFunc):
     csvExport("catStd.csv",resStd)
     return resAvg, resStd
 
+def annQuery(path, k):
+    mesh = Mesh(os.path.realpath(path))
+    mesh.resample()
+    mesh.saveMesh(os.path.join(settings[settingsName.outputPath.value], "normaliseQueriedMesh"))
+    mesh = FeaturesExtract(os.path.join(settings[settingsName.outputPath.value],
+                                        "normaliseQueriedMesh." + settings[settingsName.meshExtension.value]))
+
+    queryFeatures = mesh.featureFilter(10000)
+    queryFeatures[featureName.FILENAME.value] = os.path.basename(path)
+    DB, norm1, norm2, normalisationType = parseFeatures()
+
+    if len(DB)>0:
+        featMat = np.zeros((len(DB), len(DB[0])-2))
+    else :
+        return
+    colLabel = []
+    rowLabel = []
+    i = 0
+    for row in DB:
+        rowLabel.append(os.path.join(row[featureName.DIRNAME.value],row[featureName.FILENAME.value]))
+        j=0
+        for key in row.keys():
+                if key not in [featureName.DIRNAME.value,featureName.FILENAME.value]:
+                    if i == 0:
+                        colLabel.append(key)
+                    featMat[i][j]=row[key]
+                    j+=1
+        i+=1
+    tree = KDTree(featMat, leafsize=4)
+    dd, ii = tree.query([queryFeatures[key] for key in queryFeatures.keys() if key not in [featureName.DIRNAME.value, featureName.FILENAME.value]], k=k)
+    return [(rowLabel[index], 0, []) for index in ii]
 
 def query(path, k=5):
     mesh = Mesh(os.path.realpath(path))
@@ -415,41 +467,10 @@ def query(path, k=5):
     distListEucl = []
     distListEMD = []
     for row in DB:
-        if row["File name"]!=queryFeatures["File name"] and row["File name"] not in ["avg","std","min","max"]:
+        if row["File name"] not in ["avg","std","min","max"]:
             bisect.insort(distListEucl, euclidianDist(queryFeatures,row))
             bisect.insort(distListEMD, emDist(queryFeatures,row))
     return [(os.path.relpath(p2,'.'), dist, dContrib) for dist, p1, p2, dContrib in distListEucl[:k]], [(os.path.relpath(p2,'.'), dist, dContrib) for dist, p1, p2,dContrib in distListEMD[:k]]
-
-def displayQueryRes(queryShape, res):
-    nbOfLine = (len(res) // 5)
-    if len(res) % 5 > 0: nbOfLine += 1
-    fig, axs = plt.subplots(nbOfLine+1, 5, figsize=(18, 4*nbOfLine))
-    i = 1
-    os.makedirs(os.path.join(os.path.realpath(settings[settingsName.outputPath.value]), 'screenshot'), exist_ok=True)
-    mesh = Mesh(os.path.realpath(queryShape))
-    mesh.screenshot(os.path.join(os.path.realpath(settings[settingsName.outputPath.value]), 'screenshot'),fileName='res0')
-    for path,dist in res:
-        mesh = Mesh(os.path.join(os.path.realpath(settings[settingsName.outputDBPath.value]),path))
-        mesh.screenshot(os.path.join(os.path.realpath(settings[settingsName.outputPath.value]), 'screenshot'), fileName='res'+str(i))
-        i += 1
-
-    parDir = os.path.join(os.path.realpath(settings[settingsName.outputPath.value]), 'screenshot')
-    screen = os.path.join(os.path.realpath(parDir), 'res0.jpg')
-    image = mpimg.imread(os.path.realpath(screen))
-    axs[0, 2].set_title('Query shape')
-    axs[0, 2].imshow(image)
-    for i in range(1,len(res)+1):
-        screen = os.path.join(os.path.realpath(parDir), 'res'+str(i)+'.jpg')
-        fileType = os.path.splitext(os.path.realpath(screen))[1]
-        if os.path.isfile(screen) and fileType == ".jpg":
-            image = mpimg.imread(os.path.realpath(screen))
-            axs[(i-1)//5+1, (i-1)%5].set_title(res[i-1][0] +'\n d='+str(res[i-1][1]))
-            axs[(i-1)//5+1, (i-1)%5].imshow(image)
-            i += 1
-    for i in range(len(res)+5):
-        axs[i // 5, i % 5].axis('off')
-    plt.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=0.95, wspace=0.5, hspace=0.05)
-    plt.show()
 
 
 def saveQueryRes(queryShape, res):
@@ -458,7 +479,7 @@ def saveQueryRes(queryShape, res):
     mesh.screenshot(os.path.join(os.path.realpath('output'), 'screenshot'), fileName='query')
     i = 0
     results = {}
-    for path,dist in res:
+    for path,dist,dContrib in res:
         mesh = Mesh(os.path.join(os.path.realpath(settings[settingsName.outputDBPath.value]),path))
         mesh.screenshot(os.path.join(os.path.realpath(settings[settingsName.outputPath.value]), 'screenshot'), fileName=str(i))
         results[str(i)] = str("%.4f" % dist)
