@@ -49,7 +49,7 @@ def matrixDist(length,histoName):
     matrix = np.zeros( (length, length) )
     for i in range(length):
         for j in range(length):
-            matrix[i][j]=(j-i)*histoUpperBound[histoName]/featureHistoBins[histoName]
+            matrix[i][j]=abs(j-i)*histoUpperBound[histoName]/featureHistoBins[histoName]
     return matrix
 
 def standardisation(meshesData):
