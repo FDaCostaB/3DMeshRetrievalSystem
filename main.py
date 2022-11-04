@@ -84,6 +84,9 @@ if len(sys.argv) == 2:
         distMatrix, rowLabel = db.parseDistMatrix("emd")
         tsne(distMatrix, rowLabel, 1000)
 
+    if sys.argv[1] == "evaluate":
+        db.evaluateQuery()
+
 
 if len(sys.argv) == 4:
     if sys.argv[1] == "category-normalisation":

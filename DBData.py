@@ -541,3 +541,37 @@ def showQueriesRes(queries,resfile):
         axs[elem[0] // 5, elem[0] % 5].axis("off")
     plt.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=0.95, wspace=0.5, hspace=0.05)
     plt.savefig(settings[settingsName.outputPath.value]+ "\\"+resfile+".png")
+
+def evaluateQuery():
+    evalResults = []
+    df = pd.read_csv(os.path.join(os.path.realpath(settings[settingsName.outputPath.value]), "features.csv"))
+    # print(df)
+    counter = 0
+    for i, row in df.iterrows():
+        # if counter > 1:
+        #     break
+        if row["File name"] not in ["avg", "std"]:
+            queryPath = os.path.join(os.path.realpath(settings[settingsName.outputDBPath.value]),row["Folder name"],row["File name"])
+            queryResEucl, queryResEMD = query(queryPath, 20)
+            tP = 0
+            fP = 0
+            for q in queryResEucl:
+                rPath = q[0]
+                rClass = rPath.split("\\")[0]
+                if rClass == row["Folder name"]:
+                    tP += 1
+                else:
+                    fP += 1
+            rowRes = {
+                "fileName": row["File name"],
+                "className": row["Folder name"],
+                "TP": tP,
+                "FP": fP,
+                "TN": 380 - fP,
+                "FN": 20 - tP
+
+            }
+            evalResults.append(rowRes)
+            counter += 1
+    rDF = pd.DataFrame(evalResults)
+    rDF.to_csv(os.path.join(os.path.realpath(settings[settingsName.outputPath.value]), "evaluation.csv"))
