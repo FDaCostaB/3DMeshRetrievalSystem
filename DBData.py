@@ -1,6 +1,7 @@
 import os
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
+import numpy as np
 import bisect
 import Math
 from Features import FeaturesExtract, euclidianDist, emDist
@@ -326,13 +327,77 @@ def parseFeatures():
     elif len(min) > 0 and len(max) > 0 :
         return DB, min, max, "MinMax"
 
+
+def exportDistanceMatrix(distanceFunc):
+    DB, norm1, norm2, normalisationType = parseFeatures()
+    res = []
+    i =0
+    for obj1 in DB:
+        row = {}
+        row['OBJ1']=obj1["File name"]
+        for obj2 in DB:
+            if obj1["File name"] not in ["avg","std","min","max"] and obj2["File name"] not in ["avg","std","min","max"]:
+                if distanceFunc.lower()=="emd":
+                    row[obj2["File name"]] = emDist(obj1,obj2)[0]
+                elif distanceFunc.lower()=="euclidean":
+                    row[obj2["File name"]] = euclidianDist(obj1, obj2)[0]
+        res.append(row)
+        i+=1
+        if i%20==0 : print(str(int(i/380*100))+" %")
+    if distanceFunc.lower() == "emd":
+        csvExport('distanceEMD.csv', res)
+    elif distanceFunc.lower() == "euclidean":
+        csvExport('distanceEucl.csv', res)
+    return res
+
+def exportStat(distanceFunc):
+    DB, norm1, norm2, normalisationType = parseFeatures()
+    categories = list(set([obj['Folder name'] for obj in DB]))
+    categories.sort()
+    pairDist = {}
+
+    i =0
+    for obj1 in DB:
+        for obj2 in DB:
+            if obj1["File name"] not in ["avg","std","min","max"] and obj2["File name"] not in ["avg","std","min","max"] and obj1["Folder name"] >= obj2["Folder name"]:
+                if distanceFunc.lower()=="emd":
+                    if (obj1["Folder name"]+"-"+obj2["Folder name"]) not in pairDist.keys() :
+                        pairDist[obj1["Folder name"] + "-" + obj2["Folder name"]] = []
+                    pairDist[obj1["Folder name"] + "-" + obj2["Folder name"]].append(emDist(obj1, obj2)[3])
+                elif distanceFunc.lower()=="euclidean":
+                    if (obj1["Folder name"] + "-" + obj2["Folder name"]) not in pairDist.keys() :
+                        pairDist[obj1["Folder name"] + "-" + obj2["Folder name"]] = []
+                    pairDist[obj1["Folder name"] + "-" + obj2["Folder name"]].append(euclidianDist(obj1, obj2)[3])
+        i+=1
+        if i%20==0 : print(str(int(i/380*100))+" %")
+
+    resAvg = []
+    resStd = []
+    for pairKey in pairDist.keys():
+        avg = {}
+        std = {}
+        avg['Pair'] = pairKey
+        std['Pair'] = pairKey
+        for feature in featureName:
+            if feature.value not in ['Folder name', 'File name']:
+                distPairFeat = np.array([distList[feature.value] for distList in pairDist[pairKey]])
+                avg[feature.value]= distPairFeat.mean()
+                std[feature.value]= distPairFeat.mean()
+        resAvg.append(avg)
+        resStd.append(std)
+
+    csvExport("catAvg.csv",resAvg)
+    csvExport("catStd.csv",resStd)
+    return resAvg, resStd
+
+
 def query(path, k=5):
     mesh = Mesh(os.path.realpath(path))
     mesh.resample()
     mesh.saveMesh(os.path.join(settings[settingsName.outputPath.value],"normaliseQueriedMesh"))
     mesh = FeaturesExtract(os.path.join(settings[settingsName.outputPath.value],"normaliseQueriedMesh."+settings[settingsName.meshExtension.value]))
 
-    queryFeatures = mesh.featureFilter()
+    queryFeatures = mesh.featureFilter(10000)
     queryFeatures[featureName.FILENAME.value] = os.path.basename(path)
     DB, norm1, norm2, normalisationType = parseFeatures()
 
@@ -353,7 +418,7 @@ def query(path, k=5):
         if row["File name"]!=queryFeatures["File name"] and row["File name"] not in ["avg","std","min","max"]:
             bisect.insort(distListEucl, euclidianDist(queryFeatures,row))
             bisect.insort(distListEMD, emDist(queryFeatures,row))
-    return [(os.path.relpath(p2,'.'), dist) for dist, p1, p2 in distListEucl[:k]], [(os.path.relpath(p2,'.'), dist) for dist, p1, p2 in distListEMD[:k]]
+    return [(os.path.relpath(p2,'.'), dist, dContrib) for dist, p1, p2, dContrib in distListEucl[:k]], [(os.path.relpath(p2,'.'), dist, dContrib) for dist, p1, p2,dContrib in distListEMD[:k]]
 
 def displayQueryRes(queryShape, res):
     nbOfLine = (len(res) // 5)
@@ -386,6 +451,7 @@ def displayQueryRes(queryShape, res):
     plt.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=0.95, wspace=0.5, hspace=0.05)
     plt.show()
 
+
 def exportQueryRes(queryShape, res):
     fig, axs = plt.subplots(1, 5, figsize=(18, 4))
     i = 1
@@ -393,7 +459,7 @@ def exportQueryRes(queryShape, res):
     os.makedirs(os.path.join(os.path.realpath(settings[settingsName.outputPath.value]), 'screenshot'), exist_ok=True)
     mesh = Mesh(os.path.realpath(queryShape))
     mesh.screenshot(os.path.join(os.path.realpath(settings[settingsName.outputPath.value]), 'screenshot'),fileName='res0')
-    for path,dist in res[:4]:
+    for path,dist,dcontrib in res[:4]:
         mesh = Mesh(os.path.join(os.path.realpath(settings[settingsName.outputDBPath.value]),path))
         mesh.screenshot(os.path.join(os.path.realpath(settings[settingsName.outputPath.value]), 'screenshot'), fileName='res'+str(i))
         i += 1
@@ -415,3 +481,29 @@ def exportQueryRes(queryShape, res):
         axs[i].axis('off')
     plt.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=0.95, wspace=0.5, hspace=0.05)
     plt.show()
+
+def showQueriesRes(queries,resfile):
+    fig, axs = plt.subplots(len(queries), 5, figsize=(18, 5*len(queries)))
+    filePos = []
+
+    os.makedirs(os.path.join(os.path.realpath(settings[settingsName.outputPath.value]), 'screenshot'), exist_ok=True)
+    i = 0
+    for query in queries:
+        mesh = Mesh(os.path.realpath(query[0]))
+        mesh.screenshot(os.path.join(os.path.realpath(settings[settingsName.outputPath.value]), 'screenshot'),fileName='query'+str(i))
+        filePos.append([i,os.path.join(os.path.join(os.path.realpath(settings[settingsName.outputPath.value]), 'screenshot'),'query'+str(i)+'.jpg')])
+        j = 1
+        for res in query[1]:
+            mesh = Mesh(os.path.join(os.path.realpath(settings[settingsName.outputDBPath.value]),res[0]))
+            mesh.screenshot(os.path.join(os.path.realpath(settings[settingsName.outputPath.value]), 'screenshot'), fileName='res'+str(j+i))
+            filePos.append([j+i, os.path.join(os.path.join(os.path.realpath(settings[settingsName.outputPath.value]), 'screenshot'),'res' + str(j+i)+'.jpg')])
+            j += 1
+        i += 5
+
+    filePos.sort()
+    for elem in filePos:
+        image = mpimg.imread(os.path.realpath(elem[1]))
+        axs[elem[0]//5, elem[0] % 5].imshow(image)
+        axs[elem[0] // 5, elem[0] % 5].axis("off")
+    plt.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=0.95, wspace=0.5, hspace=0.05)
+    plt.savefig(settings[settingsName.outputPath.value]+ "\\"+resfile+".png")

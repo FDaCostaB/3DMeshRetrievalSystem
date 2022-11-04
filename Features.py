@@ -27,12 +27,12 @@ class FeaturesExtract:
 # ------------------------------------ Features computation ------------------------------------ #
 # ---------------------------------------------------------------------------------------------- #
 
-    def featureFilter(self):
+    def featureFilter(self,nbOfSample=None):
         res = { featureName.DIRNAME.value : self.category, featureName.FILENAME.value : self.fileName, featureName.CENTROID.value : Math.length(self.centroid()), featureName.SURFACE_AREA.value : self.surfaceArea(), featureName.VOLUME.value : self.volume(),
                 featureName.COMPACTNESS.value : self.compactness(), featureName.SPHERICITY.value : self.sphericity(),
                 featureName.RECTANGULARITY.value : self.rectangularity(), featureName.DIAMETER.value : self.diameter(),
                 featureName.ECCENTRICITY.value : self.eccentricity()}
-        nbOfSample = settings[settingsName.nbSample.value]
+        if nbOfSample is None: nbOfSample = settings[settingsName.nbSample.value]
         A3 = self.A3(nbOfSample)
         for i in range(len(A3[0])):
             res["A3-"+str(i)] = A3[1][i]
@@ -332,28 +332,41 @@ class FeaturesExtract:
 def euclidianDist(f1, f2):
     sumDist = 0
     weight = 0
+    distanceContribution = {"A3":0,"D1":0,"D2":0,"D3":0,"D4":0}
     for key in f1.keys():
         if key[:2]=="A3" or key[:2]=="D1" or key[:2]=="D2" or key[:2]=="D3" or key[:2]=="D4":
+            featureDist = (featureWeight[key[:2]] / (sum(list(featureWeight.values())) * featureHistoBins[key[:2]])) * abs(f1[key] - f2[key]) ** 2
             weight += featureWeight[key[:2]] / (sum(list(featureWeight.values())) * featureHistoBins[key[:2]])
-            sumDist += (featureWeight[key[:2]] / (sum(list(featureWeight.values())) * featureHistoBins[key[:2]])) * abs(f1[key] - f2[key]) ** 2
+            sumDist += featureDist
+            distanceContribution[key[:2]] += featureDist
         elif key not in ['File name', 'Folder name'] :
+            featureDist = (featureWeight[key] / sum(list(featureWeight.values()))) * abs(f1[key] - f2[key]) ** 2
             weight += featureWeight[key] / sum(list(featureWeight.values()))
-            sumDist += (featureWeight[key] / sum(list(featureWeight.values()))) * abs(f1[key] - f2[key]) ** 2
+            sumDist += featureDist
+            distanceContribution[key] = featureDist
     if weight > 1+1e-9 or weight < 1-1e-9:
         raise Exception("Sum of weight not equal to 1 - Sum : "+ str(weight))
-    return sumDist**0.5, os.path.join(f1[featureName.DIRNAME.value],f1[featureName.FILENAME.value]), os.path.join(f2[featureName.DIRNAME.value],f2[featureName.FILENAME.value])
+    distanceContribution = {key: val for key,val in sorted(distanceContribution.items(), key = lambda ele: ele[1], reverse = True)}
+    return sumDist**0.5, os.path.join(f1[featureName.DIRNAME.value],f1[featureName.FILENAME.value]), os.path.join(f2[featureName.DIRNAME.value],f2[featureName.FILENAME.value]), distanceContribution
+
 
 def emDist(f1, f2):
     sumScalar = 0
     sumHisto = 0
+    distanceContribution = {}
     for key in f1.keys():
         if key[:2] not in ['A3','D1','D2','D3','D4'] and key not in ['File name', 'Folder name']:
-            sumScalar += (featureWeight[key] / sum(list(featureWeight.values()))) * abs(f1[key] - f2[key]) ** 2
+            featureDist = (featureWeight[key] / sum(list(featureWeight.values()))) * abs(f1[key] - f2[key]) ** 2
+            sumScalar += featureDist
+            distanceContribution[key] = featureDist
     for histoName in ['A3', 'D1', 'D2', 'D3', 'D4']:
         histf1 = np.array([list(f1.values())[i] for i in range(len(f1)) if list(f1.keys())[i][:2] == histoName])
         histf2 = np.array([list(f2.values())[i] for i in range(len(f2)) if list(f2.keys())[i][:2] == histoName])
         if len(histf1) != len(histf2):
             raise ("Dimmensionality is not the same")
         dist = Math.matrixDist(len(histf1),histoName)
-        sumHisto += (featureWeight[key[:2]] / sum(list(featureWeight.values()))) * emd(histf1, histf2, dist)
-    return sumScalar ** 0.5 + sumHisto, os.path.join(f1[featureName.DIRNAME.value],f1[featureName.FILENAME.value]), os.path.join(f2[featureName.DIRNAME.value],f2[featureName.FILENAME.value])
+        featureDist = (featureWeight[key[:2]] / sum(list(featureWeight.values()))) * abs(emd(histf1, histf2, dist))
+        sumHisto += featureDist
+        distanceContribution[histoName] = featureDist
+    distanceContribution = {key: val for key,val in sorted(distanceContribution.items(), key = lambda ele: ele[1], reverse = True)}
+    return sumScalar ** 0.5 + sumHisto, os.path.join(f1[featureName.DIRNAME.value],f1[featureName.FILENAME.value]), os.path.join(f2[featureName.DIRNAME.value],f2[featureName.FILENAME.value]), distanceContribution
