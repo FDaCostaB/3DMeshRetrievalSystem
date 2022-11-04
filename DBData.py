@@ -452,6 +452,19 @@ def displayQueryRes(queryShape, res):
     plt.show()
 
 
+def saveQueryRes(queryShape, res):
+    os.makedirs(os.path.join(os.path.realpath('output'), 'screenshot'), exist_ok=True)
+    mesh = Mesh(os.path.realpath(os.path.relpath(queryShape, '.')))
+    mesh.screenshot(os.path.join(os.path.realpath('output'), 'screenshot'), fileName='query')
+    i = 0
+    results = {}
+    for path,dist in res:
+        mesh = Mesh(os.path.join(os.path.realpath(settings[settingsName.outputDBPath.value]),path))
+        mesh.screenshot(os.path.join(os.path.realpath(settings[settingsName.outputPath.value]), 'screenshot'), fileName=str(i))
+        results[str(i)] = str("%.4f" % dist)
+        i += 1
+    return results
+
 def exportQueryRes(queryShape, res):
     fig, axs = plt.subplots(1, 5, figsize=(18, 4))
     i = 1
