@@ -5,7 +5,9 @@ import LP as lp
 from Mesh import Mesh
 from Settings import readSettings, settings, settingsName
 from tsne import tsne
+import warnings
 
+warnings.filterwarnings("ignore")
 readSettings()
 files = ['output/NormaliseDB/Airplane/70.off',
 'output/NormaliseDB/Ant/98.off',
@@ -63,6 +65,13 @@ if len(sys.argv) == 3:
     if sys.argv[1] == "optimisedWeigth":
         lp.ScalarOptimisedWeight()
 
+    if sys.argv[1] == "tsne":
+        distMatrix, rowLabel = db.parseDistMatrix(sys.argv[2])
+        tsne(distMatrix, rowLabel, 1000000)
+
+    if sys.argv[1] == "evaluate":
+        db.evaluateQuery(sys.argv[2])
+
 if len(sys.argv) == 2:
     if sys.argv[1] == "full-normalisation":
         db.normalise()
@@ -80,13 +89,8 @@ if len(sys.argv) == 2:
         db.showQueriesRes(resEucl,"resEucl")
         db.showQueriesRes(resEmd,"resEMD")
 
-    if sys.argv[1] == "tsne":
-        distMatrix, rowLabel = db.parseDistMatrix("emd")
-        tsne(distMatrix, rowLabel, 1000)
-
-    if sys.argv[1] == "evaluate":
-        db.evaluateQuery()
-
+    if sys.argv[1] == "lp":
+        lp.ScalarOptimisedWeight()
 
 if len(sys.argv) == 4:
     if sys.argv[1] == "category-normalisation":
@@ -103,4 +107,7 @@ if len(sys.argv) == 4:
 
     if sys.argv[1] == "annQuery":
         queryRes = db.annQuery(sys.argv[2], k=int(sys.argv[3]))
-        db.exportQueryRes(sys.argv[2], queryResEucl)
+        db.exportQueryRes(sys.argv[2], queryRes)
+
+    if sys.argv[1] == "roc":
+        db.ROC(sys.argv[2],sys.argv[3])

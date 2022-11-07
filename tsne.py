@@ -3,9 +3,11 @@ from sklearn.manifold import TSNE
 import numpy as np
 import matplotlib.pyplot as plt
 
+colors = ["black", "lightgray", "red", "saddlebrown", "darkorange", "steelblue", "yellow", "green", "lime", "cyan",
+          "blue", "purple", "deeppink", "crimson", "chartreuse", "maroon", "springgreen", "indigo", "lightcoral"]
+
+
 def tsne(distMat, label, nIter) :
-    # Load the MNIST data
-    # X, label = fetch_openml('mnist_784', version=1, return_X_y=True, as_frame=False)
 
     X = distMat
 
@@ -18,19 +20,18 @@ def tsne(distMat, label, nIter) :
     # Generating unique Label list
     uniqueLabel = list(set(label))
     uniqueLabel.sort()
-    # X row of Y features
-    print(X.shape)
-    # Label of each row of X
-    print(len(label))
-    # Label list
-    print(uniqueLabel)
 
-    tsne = TSNE(2, metric="precomputed", n_iter=nIter) # TSNE settings have to be set here according to : https://scikit-learn.org/stable/modules/generated/sklearn.manifold.TSNE.html#examples-using-sklearn-manifold-tsne
+    tsne = TSNE(2, perplexity=20, metric="precomputed", n_iter=nIter) # TSNE settings have to be set here according to : https://scikit-learn.org/stable/modules/generated/sklearn.manifold.TSNE.html#examples-using-sklearn-manifold-tsne
     tsne_result = tsne.fit_transform(X) # Apply TSNE
 
     fig, ax = plt.subplots(1)
 
-    plt.scatter(tsne_result[:,0], tsne_result[:,1], s=5, c=[uniqueLabel.index(i) for i in label])
+    label= np.array(label)
+    i=0
+    for g in uniqueLabel:
+        ix = np.where(label == g)
+        plt.scatter(tsne_result[ix,0], tsne_result[ix,1], s=5, c=colors[i], label=g)
+        i+=1
     lim = (tsne_result.min()-5, tsne_result.max()+5)
     ax.set_xlim(lim)
     ax.set_ylim(lim)

@@ -20,6 +20,7 @@ def read_data_model():
                 j+=1
     constraintCoeffs = np.zeros((catDistMat.shape[0], catDistMat.shape[1]+catDistMat.shape[0]))
 
+    coefSumConstraints = np.zeros(catDistMat.shape[1]+catDistMat.shape[0])
     data = {}
     data['bounds'] = np.zeros(constraintCoeffs.shape[0])
     for i in range(catDistMat.shape[0]):
@@ -33,6 +34,7 @@ def read_data_model():
     data['obj_coeffs'] = np.ones(constraintCoeffs.shape[1])
     for i in range(catDistMat.shape[1]):
         data['obj_coeffs'][i] = 0
+        coefSumConstraints[i] = 1
     data['obj_coeffs'][len(data['obj_coeffs'])-1]=1
     for i in range(catDistMat.shape[1],constraintCoeffs.shape[1]):
         if newRowLabel[i-catDistMat.shape[1]].split('-')[0]==newRowLabel[i-catDistMat.shape[1]].split('-')[1]:
@@ -40,10 +42,10 @@ def read_data_model():
 
     data['num_vars'] = constraintCoeffs.shape[1]
     data['num_constraints'] = constraintCoeffs.shape[0]
-    return data, newRowLabel, colLabel
+    return data, coefSumConstraints, newRowLabel, colLabel
 
 def ScalarOptimisedWeight():
-    data, rowLabel, colLabel = read_data_model()
+    data, coefSumConstraints, rowLabel, colLabel = read_data_model()
 
     # Instantiate a Glop solver, naming it LinearExample.
     solver = pywraplp.Solver.CreateSolver('SCIP')
@@ -51,12 +53,13 @@ def ScalarOptimisedWeight():
     if not solver:
         return
 
+    infinity=solver.infinity()
     x = {}
     for j in range(data['num_vars']):
         if j<13:
-            x[j] = solver.IntVar(0, 11, 'x[%i]' % j)
+            x[j] = solver.IntVar(1, 20, 'x[%i]' % j)
         else:
-            x[j] = solver.IntVar(0, 100, 'x[%i]' % j)
+            x[j] = solver.IntVar(0, 200, 'x[%i]' % j)
     print('Number of variables =', solver.NumVariables())
 
     for i in range(data['num_constraints']):
@@ -65,6 +68,8 @@ def ScalarOptimisedWeight():
             solver.Add(sum(constraint_expr) <= data['bounds'][i])
         else:
             solver.Add(sum(constraint_expr) >= data['bounds'][i])
+    sumCoefConstraint = [coefSumConstraints[j] * x[j] for j in range(data['num_vars'])]
+    solver.Add(sum(sumCoefConstraint) == 100)
 
     print('Number of constraints =', solver.NumConstraints())
 
@@ -76,9 +81,13 @@ def ScalarOptimisedWeight():
 
     if status == pywraplp.Solver.OPTIMAL:
         print('\nSolution:')
-        print('Objective value =', solver.Objective().Value())
-        for j in range(13):
-            if j == 13: print('\nCategory distance : ')
-            print(colLabel[j], ' = ', x[j].solution_value())
+        print('Objective value =', solver.Objective().Value()/100)
+        for j in range(solver.NumVariables()):
+            # if j == 13:
+            #    print('\nCategory distance : ')
+            if j < 13:
+                print(colLabel[j], ' = ', x[j].solution_value())
+            # else:
+            #     print(colLabel[j], ' = ', x[j].solution_value()/100)
     else:
         print('The problem does not have an optimal solution.')

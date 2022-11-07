@@ -19,10 +19,10 @@ class featureName(Enum):
     CENTROID = "Centroid"
 
 
-featureWeight = { featureName.A3.value: 1, featureName.D1.value : 1, featureName.D2.value : 1, featureName.D3.value : 1,
-                     featureName.D4.value : 1, featureName.SURFACE_AREA.value : 1, featureName.VOLUME.value : 1,
-                     featureName.COMPACTNESS.value : 1, featureName.SPHERICITY.value : 1, featureName.RECTANGULARITY.value : 1,
-                     featureName.DIAMETER.value : 1, featureName.ECCENTRICITY.value : 1, featureName.CENTROID.value : 1 }
+featureWeight = { featureName.A3.value: 13, featureName.D1.value : 1, featureName.D2.value : 2, featureName.D3.value : 1,
+                     featureName.D4.value : 13, featureName.SURFACE_AREA.value : 14, featureName.VOLUME.value : 14,
+                     featureName.COMPACTNESS.value : 14, featureName.SPHERICITY.value : 14, featureName.RECTANGULARITY.value : 14,
+                     featureName.DIAMETER.value : 1, featureName.ECCENTRICITY.value : 10, featureName.CENTROID.value : 1 }
 
 featureDimension = { featureName.A3.value: 2, featureName.D1.value : 2, featureName.D2.value : 2, featureName.D3.value : 2,
                      featureName.D4.value : 2, featureName.SURFACE_AREA.value : 1, featureName.VOLUME.value : 1,
