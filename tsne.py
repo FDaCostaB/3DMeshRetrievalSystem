@@ -9,14 +9,12 @@ colors = ["black", "lightgray", "red", "saddlebrown", "darkorange", "steelblue",
 
 def tsne(distMat, label, nIter) :
 
-    X = distMat
-
     # Generating unique Label list
     uniqueLabel = list(set(label))
     uniqueLabel.sort()
 
     tsne = TSNE(2, perplexity=20, metric="precomputed", n_iter=nIter)
-    tsne_result = tsne.fit_transform(X)
+    tsne_result = tsne.fit_transform(distMat)
 
     fig, ax = plt.subplots(1)
 
