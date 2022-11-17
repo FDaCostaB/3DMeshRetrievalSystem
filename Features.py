@@ -6,7 +6,7 @@ import numpy as np
 from math import pi
 import Math
 from featureName import featureName, featureDimension, featureHistoBins, featureWeight, histoUpperBound
-from parse import getFieldList, getIndexList
+from parse import getIndexList
 from pyemd import emd # https://pypi.org/project/pyemd/
 from Settings import settings, settingsName
 

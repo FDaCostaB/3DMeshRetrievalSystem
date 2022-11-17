@@ -4,8 +4,7 @@ import pymeshlab
 import polyscope as ps
 import numpy as np
 from dataName import dataName
-from DebugLog import debugLvl, debugLog
-from parse import getFieldList, getIndexList
+from parse import getIndexList
 import polyscopeUI as psUI
 import Math
 from Settings import settings,settingsName
@@ -54,7 +53,6 @@ class Mesh:
                 except:
                     self.ms.apply_filter('meshing_repair_non_manifold_edges', method='Remove Faces')
                     self.ms.apply_filter('meshing_repair_non_manifold_vertices')
-                    debugLog(os.path.realpath(self.meshPath) + " - ERROR : Failed to apply filter:  'meshing_surface_subdivision_loop' => Applying Non-Manifold Repair",debugLvl.ERROR)
             elif newStats[dataName.VERTEX_NUMBERS.value] > expectedVerts + eps:
                 self.ms.apply_filter('meshing_decimation_quadric_edge_collapse', targetperc= expectedVerts / newStats[dataName.VERTEX_NUMBERS.value])
             newStats = self.dataFilter()
@@ -70,10 +68,7 @@ class Mesh:
         try:
             self.ms.apply_filter('apply_coord_laplacian_smoothing', stepsmoothnum=5)
         except:
-            debugLog(os.path.realpath(self.meshPath) + " - ERROR : Failed to apply filter:  'apply_coord_laplacian_smoothing.",debugLvl.ERROR)
-        if newStats[dataName.VERTEX_NUMBERS.value] < expectedVerts - eps or newStats[dataName.VERTEX_NUMBERS.value] > expectedVerts + eps:
-            debugLog(os.path.realpath(self.meshPath) + ' : Before - ' + str(oldStats[dataName.VERTEX_NUMBERS.value]) +
-                     ' | After - ' + str(newStats[dataName.VERTEX_NUMBERS.value]), debugLvl.INFO)
+            print(os.path.realpath(self.meshPath) + " - ERROR : Failed to apply filter:  'apply_coord_laplacian_smoothing.")
 
     def clean(self):
         self.ms.apply_filter('meshing_remove_duplicate_faces')
@@ -140,19 +135,15 @@ class Mesh:
                                                              uniformflag=True)
 
         if showComparison:
-            self.printProperties()
             self.compare()
 
     def resample(self, showComparison=False):
-        if showComparison:
-           self.printProperties()
 
         self.clean()
         self.normaliseVertices()
         self.normalise()
 
         if showComparison:
-            self.printProperties()
             self.compare()
 
     def getNbComponents(self):
@@ -195,12 +186,6 @@ class Mesh:
 # ---------------------------------------------------------------------------------------------- #
 # ---------------------------------------- I/O features ---------------------------------------- #
 # ---------------------------------------------------------------------------------------------- #
-    def printProperties(self):
-        stats = self.dataFilter()
-        debugLog(
-            os.path.realpath(self.meshPath) + ' : Size :' + str(stats[dataName.SIDE_SIZE.value]) + ', Shell Barycenter : ' + str(stats[dataName.BARYCENTER.value]) + ', Moment order' +
-            str(np.sign(stats[dataName.MOMENT.value])) +'\nPCA :\n'+ str(stats[dataName.PCA.value]),debugLvl.DEBUG)
-
 
     def compare(self):
         psUI.setPolyscopeSetting(1280, 720)
