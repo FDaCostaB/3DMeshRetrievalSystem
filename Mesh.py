@@ -19,7 +19,7 @@ class Mesh:
             self.ms.load_new_mesh(meshPath)
             self.mesh = self.ms.current_mesh()
         else:
-            raise Exception("Format not accepted")
+            raise Exception("Format not accepted : "+ fileType)
 
     # ---------------------------------------------------------------------------------------------- #
     # --------------------------------- Normalisation computations --------------------------------- #
@@ -254,4 +254,4 @@ class Mesh:
         if camLocation == "straight" :
             ps.set_view_projection_mode('orthographic')
             ps.look_at((0., -0.5 , 0.), (0., 0., 0.))
-        ps.screenshot(saveTo+'/'+fileName+'.jpg', False)
+        ps.screenshot(os.path.join(saveTo,fileName+'.jpg'), False)

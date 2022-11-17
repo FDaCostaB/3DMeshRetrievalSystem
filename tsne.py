@@ -11,18 +11,12 @@ def tsne(distMat, label, nIter) :
 
     X = distMat
 
-    # Randomly select 1000 samples for performance reasons
-    # np.random.seed(100)
-    # subsample_idc = np.random.choice(X.shape[0], 1000, replace=False)
-    # X = X[subsample_idc,:]
-    # label = label[subsample_idc]
-
     # Generating unique Label list
     uniqueLabel = list(set(label))
     uniqueLabel.sort()
 
-    tsne = TSNE(2, perplexity=20, metric="precomputed", n_iter=nIter) # TSNE settings have to be set here according to : https://scikit-learn.org/stable/modules/generated/sklearn.manifold.TSNE.html#examples-using-sklearn-manifold-tsne
-    tsne_result = tsne.fit_transform(X) # Apply TSNE
+    tsne = TSNE(2, perplexity=20, metric="precomputed", n_iter=nIter)
+    tsne_result = tsne.fit_transform(X)
 
     fig, ax = plt.subplots(1)
 

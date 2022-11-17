@@ -393,33 +393,19 @@ def exportStat(distanceFunc):
         if i%20==0 : print(str(int(i/380*100))+" %")
 
     resAvg = []
-    resStd = []
     for pairKey in pairDist.keys():
         avg = {}
-        std = {}
         avg['Pair'] = pairKey
-        std['Pair'] = pairKey
         for feature in featureName:
             if feature.value not in ['Folder name', 'File name']:
                 distPairFeat = np.array([distList[feature.value] for distList in pairDist[pairKey]])
                 avg[feature.value]= distPairFeat.mean()
-                std[feature.value]= distPairFeat.mean()
         resAvg.append(avg)
-        resStd.append(std)
 
     csvExport("catAvg.csv",resAvg)
-    csvExport("catStd.csv",resStd)
-    return resAvg, resStd
+    return resAvg
 
-def annQuery(path, k):
-    mesh = Mesh(os.path.realpath(path))
-    mesh.resample()
-    mesh.saveMesh(os.path.join(settings[settingsName.outputPath.value], "normaliseQueriedMesh"))
-    mesh = FeaturesExtract(os.path.join(settings[settingsName.outputPath.value],
-                                        "normaliseQueriedMesh." + settings[settingsName.meshExtension.value]))
-
-    queryFeatures = mesh.featureFilter(10000)
-    queryFeatures[featureName.FILENAME.value] = os.path.basename(path)
+def buildTree():
     DB, norm1, norm2, normalisationType = parseFeatures()
 
     if len(DB)>0:
@@ -440,10 +426,20 @@ def annQuery(path, k):
                     j+=1
         i+=1
     tree = KDTree(featMat, leaf_size=4)
+    return tree, rowLabel
+def annQuery(path, k, tree, rowLabel):
+    mesh = Mesh(os.path.realpath(path))
+    mesh.resample()
+    mesh.saveMesh(os.path.join(settings[settingsName.outputPath.value], "normaliseQueriedMesh"))
+    mesh = FeaturesExtract(os.path.join(settings[settingsName.outputPath.value],
+                                        "normaliseQueriedMesh." + settings[settingsName.meshExtension.value]))
+    queryFeatures = mesh.featureFilter(10000)
+    queryFeatures[featureName.FILENAME.value] = os.path.basename(path)
+
     dd, ii = tree.query([[queryFeatures[key] for key in queryFeatures.keys() if key not in [featureName.DIRNAME.value, featureName.FILENAME.value]]], k=k)
     return [(rowLabel[index], 0, []) for index in ii[0]]
 
-def query(path, k=5):
+def query(path, qtype, k=5):
     mesh = Mesh(os.path.realpath(path))
     mesh.resample()
     mesh.saveMesh(os.path.join(settings[settingsName.outputPath.value],"normaliseQueriedMesh"))
@@ -468,9 +464,14 @@ def query(path, k=5):
     distListEMD = []
     for row in DB:
         if row["File name"] not in ["avg","std","min","max"]:
-            bisect.insort(distListEucl, euclidianDist(queryFeatures,row))
-            bisect.insort(distListEMD, emDist(queryFeatures,row))
-    return [(os.path.relpath(p2,'.'), dist, dContrib) for dist, p1, p2, dContrib in distListEucl[:k]], [(os.path.relpath(p2,'.'), dist, dContrib) for dist, p1, p2,dContrib in distListEMD[:k]]
+            if qtype.lower() == "euclidean" :
+                bisect.insort(distListEucl, euclidianDist(queryFeatures,row))
+            elif qtype.lower() == "emd" :
+                bisect.insort(distListEMD, emDist(queryFeatures,row))
+    if qtype.lower() == "euclidean":
+        return [(os.path.relpath(p2,'.'), dist, dContrib) for dist, p1, p2, dContrib in distListEucl[:k]]
+    elif qtype.lower() == "emd":
+        return [(os.path.relpath(p2,'.'), dist, dContrib) for dist, p1, p2,dContrib in distListEMD[:k]]
 
 
 def saveQueryRes(queryShape, res):
@@ -516,88 +517,27 @@ def exportQueryRes(queryShape, res):
     plt.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=0.95, wspace=0.5, hspace=0.05)
     plt.show()
 
-def showQueriesRes(queries,resfile):
-    fig, axs = plt.subplots(len(queries), 5, figsize=(18, 5*len(queries)))
-    filePos = []
 
-    os.makedirs(os.path.join(os.path.realpath(settings[settingsName.outputPath.value]), 'screenshot'), exist_ok=True)
-    i = 0
-    for query in queries:
-        mesh = Mesh(os.path.realpath(query[0]))
-        mesh.screenshot(os.path.join(os.path.realpath(settings[settingsName.outputPath.value]), 'screenshot'),fileName='query'+str(i))
-        filePos.append([i,os.path.join(os.path.join(os.path.realpath(settings[settingsName.outputPath.value]), 'screenshot'),'query'+str(i)+'.jpg')])
-        j = 1
-        for res in query[1]:
-            mesh = Mesh(os.path.join(os.path.realpath(settings[settingsName.outputDBPath.value]),res[0]))
-            mesh.screenshot(os.path.join(os.path.realpath(settings[settingsName.outputPath.value]), 'screenshot'), fileName='res'+str(j+i))
-            filePos.append([j+i, os.path.join(os.path.join(os.path.realpath(settings[settingsName.outputPath.value]), 'screenshot'),'res' + str(j+i)+'.jpg')])
-            j += 1
-        i += 5
-
-    filePos.sort()
-    for elem in filePos:
-        image = mpimg.imread(os.path.realpath(elem[1]))
-        axs[elem[0]//5, elem[0] % 5].imshow(image)
-        axs[elem[0] // 5, elem[0] % 5].axis("off")
-    plt.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=0.95, wspace=0.5, hspace=0.05)
-    plt.savefig(settings[settingsName.outputPath.value]+ "\\"+resfile+".png")
-
-
-def evaluateQuery(dType):
-    evalResults = []
+def evaluateQuery():
     df = pd.read_csv(os.path.join(os.path.realpath(settings[settingsName.outputPath.value]), "features.csv"))
     counter = 0
+    evalResEMD = []
+    evalResEucl = []
     for i, row in df.iterrows():
         if row["File name"] not in ["avg", "std"]:
             queryPath = os.path.join(os.path.realpath(settings[settingsName.outputDBPath.value]),row["Folder name"],row["File name"])
-            queryResEucl, queryResEMD = query(queryPath, 380)
+            queryResEucl = query(queryPath, "euclidean", 380)
+            queryResEMD = query(queryPath, "emd", 380)
 
-            if dType.lower() == "emd":
-                queryRes = queryResEMD[:20]
-            elif dType.lower() == "euclidean":
-                queryRes = queryResEucl[:20]
-            else :
-                return
+            for dType in ["emd","euclidean"]:
+                if dType.lower() == "emd":
+                    queryRes = queryResEMD[:20]
+                elif dType.lower() == "euclidean":
+                    queryRes = queryResEucl[:20]
 
-            tP = 0
-            fP = 0
-            for q in queryRes:
-                rPath = q[0]
-                rClass = rPath.split("\\")[0]
-                if rClass == row["Folder name"]:
-                    tP += 1
-                else:
-                    fP += 1
-            fN = 20 - tP
-            tN = 380 - fP
-            rowRes = {
-                "fileName": row["File name"],
-                "className": row["Folder name"],
-                "TP": tP,
-                "FP": fP,
-                "TN": tN,
-                "FN": fN,
-                "Total Performance": (fP + fN) / 380,
-                "Accuracy" : (tP+tN) / 380,
-                "Precision" : tP /(tP+fP),
-                "Recall" : tP /(tP+fN),
-                "Sensitivity": tP / (tP+fN),
-                "Specificity": tN / (fP + tN)
-            }
-
-            if dType.lower() == "emd":
-                queryRes = queryResEMD
-            elif dType.lower() == "euclidean":
-                queryRes = queryResEucl
-            else :
-                return
-
-            roc = []
-            for k in range(1,381):
-                querySize = queryRes[:k]
                 tP = 0
                 fP = 0
-                for q in querySize:
+                for q in queryRes:
                     rPath = q[0]
                     rClass = rPath.split("\\")[0]
                     if rClass == row["Folder name"]:
@@ -605,33 +545,95 @@ def evaluateQuery(dType):
                     else:
                         fP += 1
                 fN = 20 - tP
-                tN = 380 - fP
-                Sensitivity = tP / (tP + fN)
-                Specificity = tN / (fP + tN)
-                roc.append([Sensitivity,Specificity])
-            auroc = sum([val[0] for val in roc])/len(roc)
-            rowRes["AUROC"] = auroc
-            evalResults.append(rowRes)
-            counter += 1
-            if counter % 20 == 0: print(str(int(counter / 380 * 100)) + " %")
-    rDF = pd.DataFrame(evalResults)
-    rDF.to_csv(os.path.join(os.path.realpath(settings[settingsName.outputPath.value]), "evaluation-"+dType.lower()+".csv"))
+                tN = 360 - fP
+                rowRes = {
+                    "fileName": row["File name"],
+                    "className": row["Folder name"],
+                    "TP": tP,
+                    "FP": fP,
+                    "TN": tN,
+                    "FN": fN,
+                    "Total Performance": (fP + fN) / 380,
+                    "Accuracy" : (tP+tN) / 380,
+                    "Precision" : tP /(tP+fP),
+                    "Recall/Sensitivity" : tP /(tP+fN),
+                    "Specificity": tN / (fP + tN)
+                }
 
-def ROC(queryPath,dType):
-    queryResEucl, queryResEMD = query(queryPath, 380)
+                if dType.lower() == "emd":
+                    queryRes = queryResEMD
+                elif dType.lower() == "euclidean":
+                    queryRes = queryResEucl
+
+                roc = []
+                for k in range(1,381):
+                    querySize = queryRes[:k]
+                    tP = 0
+                    fP = 0
+                    for q in querySize:
+                        rPath = q[0]
+                        rClass = rPath.split("\\")[0]
+                        if rClass == row["Folder name"]:
+                            tP += 1
+                        else:
+                            fP += 1
+                    fN = 20 - tP
+                    tN = 380 - fP
+                    Sensitivity = tP / (tP + fN)
+                    Specificity = tN / (fP + tN)
+                    roc.append([Sensitivity,Specificity])
+                auroc = sum([val[0] for val in roc])/len(roc)
+                rowRes["AUROC"] = auroc
+                if dType.lower() == "emd":
+                    evalResEMD.append(rowRes)
+                elif dType.lower() == "euclidean":
+                    evalResEucl.append(rowRes)
+
+
+                counter += 1
+                if counter % 40 == 0: print(str(int(counter / 760 * 100)) + " %")
+
+    rDF = pd.DataFrame(evalResEMD)
+    rDF.to_csv(os.path.join(os.path.realpath(settings[settingsName.outputPath.value]), "evaluation-emd.csv"))
+    rDF = pd.DataFrame(evalResEucl)
+    rDF.to_csv(os.path.join(os.path.realpath(settings[settingsName.outputPath.value]), "evaluation-eucl.csv"))
+
+
+def timeQuery():
+    import time
+    #tree, rowLabel = buildTree()
+
+    df = pd.read_csv(os.path.join(os.path.realpath(settings[settingsName.outputPath.value]), "features.csv"))
+    queryTime = []
+    for i, row in df.iterrows():
+        if row["File name"] not in ["avg", "std"]:
+            queryPath = os.path.join(os.path.realpath(settings[settingsName.outputDBPath.value]),row["Folder name"],row["File name"])
+            start = time.time()
+            query(queryPath, "emd", 20)
+            #annQuery(queryPath, 20, tree, rowLabel)
+            end = time.time()
+            queryTime.append((end - start) * 10 ** 3)
+            print(i)
+            print((end - start) * 10 ** 3)
+    time = np.array(queryTime)
+    print("Mean : ")
+    print(time.mean())
+    print("Std : ")
+    print(time.std())
+    print("Median : ")
+    print(np.median(time))
+    print("Max : ")
+    print(time.max())
+    print("Min : ")
+    print(time.min())
+
+def ROC(queryPath, dType):
+    queryRes = query(queryPath, dType, 380)
     mesh = Mesh(queryPath)
     cat = mesh.dataFilter()[dataName.CATEGORY.value]
     roc = []
 
-    if dType.lower() == "emd":
-        queryRes = queryResEMD
-    elif dType.lower() == "euclidean":
-        queryRes = queryResEucl
-    else:
-        return
-
     for k in range(1,381):
-        print(k)
         querySize = queryRes[:k]
         tP = 0
         fP = 0
@@ -648,7 +650,7 @@ def ROC(queryPath,dType):
         Specificity = tN / (fP + tN)
         roc.append([Sensitivity,Specificity])
     auroc = sum([val[0] for val in roc])/len(roc)
-    print(auroc)
     print(queryPath)
+    print(auroc)
     plt.scatter([val[0] for val in roc], [val[1] for val in roc],s=2,c="black")
     plt.show()

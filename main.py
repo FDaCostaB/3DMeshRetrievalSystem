@@ -9,25 +9,6 @@ import warnings
 
 warnings.filterwarnings("ignore")
 readSettings()
-files = ['output/NormaliseDB/Airplane/70.off',
-'output/NormaliseDB/Ant/98.off',
-'output/NormaliseDB/Armadillo/287.off',
-'output/NormaliseDB/Bearing/348.off',
-'output/NormaliseDB/Bird/256.off',
-'output/NormaliseDB/Bust/304.off',
-'output/NormaliseDB/Chair/114.off',
-'output/NormaliseDB/Cup/37.off',
-'output/NormaliseDB/Fish/223.off',
-'output/NormaliseDB/FourLeg/381.off',
-'output/NormaliseDB/Glasses/52.off',
-'output/NormaliseDB/Hand/200.off',
-'output/NormaliseDB/Human/10.off',
-'output/NormaliseDB/Mech/328.off',
-'output/NormaliseDB/Octopus/122.off',
-'output/NormaliseDB/Plier/209.off',
-'output/NormaliseDB/Table/150.off',
-'output/NormaliseDB/Teddy/165.off',
-'output/NormaliseDB/Vase/363.off']
 
 if len(sys.argv) == 3:
     if sys.argv[1] == "render":
@@ -67,10 +48,7 @@ if len(sys.argv) == 3:
 
     if sys.argv[1] == "tsne":
         distMatrix, rowLabel = db.parseDistMatrix(sys.argv[2])
-        tsne(distMatrix, rowLabel, 1000000)
-
-    if sys.argv[1] == "evaluate":
-        db.evaluateQuery(sys.argv[2])
+        tsne(distMatrix, rowLabel, 100000)
 
 if len(sys.argv) == 2:
     if sys.argv[1] == "full-normalisation":
@@ -79,18 +57,14 @@ if len(sys.argv) == 2:
     if sys.argv[1] == "features":
         db.exportDBFeatures()
 
-    if sys.argv[1] == "query":
-        resEucl = []
-        resEmd = []
-        for file in files:
-            queryResEucl, queryResEMD = db.query(file, k=4)
-            resEucl.append([file,queryResEucl])
-            resEmd.append([file,queryResEMD])
-        db.showQueriesRes(resEucl,"resEucl")
-        db.showQueriesRes(resEmd,"resEMD")
-
     if sys.argv[1] == "lp":
         lp.ScalarOptimisedWeight()
+
+    if sys.argv[1] == "evaluate":
+        db.evaluateQuery()
+
+    if sys.argv[1] == "time":
+        db.timeQuery()
 
 if len(sys.argv) == 4:
     if sys.argv[1] == "category-normalisation":
@@ -101,12 +75,13 @@ if len(sys.argv) == 4:
         db.viewCategory(sys.argv[2], sys.argv[3]=="original")
 
     if sys.argv[1] == "query":
-        queryResEucl, queryResEMD = db.query(sys.argv[2], k=int(sys.argv[3]))
-        db.exportQueryRes(sys.argv[2], queryResEucl)
-        db.exportQueryRes(sys.argv[2], queryResEMD)
+        queryRes = db.query(sys.argv[2], "euclidean", k=int(sys.argv[3]))
+        db.exportQueryRes(sys.argv[2], queryRes)
 
     if sys.argv[1] == "annQuery":
-        queryRes = db.annQuery(sys.argv[2], k=int(sys.argv[3]))
+        tree, rowLabel = db.buildTree()
+        queryTime = []
+        queryRes = db.annQuery(sys.argv[2],sys.argv[3], tree, rowLabel)
         db.exportQueryRes(sys.argv[2], queryRes)
 
     if sys.argv[1] == "roc":

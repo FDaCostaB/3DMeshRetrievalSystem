@@ -67,9 +67,9 @@ class Root(FloatLayout):
         queryPath = os.path.join(path, filename[0])
         k = int(self.slider.value)
         with futures.ThreadPoolExecutor(max_workers=5) as executor:
-            future = executor.submit(db.query,queryPath,k)
-            queryResEucl, queryResEMD = future.result()
-            future = executor.submit(db.saveQueryRes,queryPath, queryResEucl)
+            future = executor.submit(db.query, queryPath, "emd",k)
+            queryRes = future.result()
+            future = executor.submit(db.saveQueryRes,queryPath, queryRes)
             imageDist = future.result()
         self.dismiss_popup()
         print(imageDist)

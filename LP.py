@@ -57,7 +57,7 @@ def ScalarOptimisedWeight():
     x = {}
     for j in range(data['num_vars']):
         if j<13:
-            x[j] = solver.IntVar(1, 20, 'x[%i]' % j)
+            x[j] = solver.IntVar(1, 10, 'x[%i]' % j)
         else:
             x[j] = solver.IntVar(0, 200, 'x[%i]' % j)
     print('Number of variables =', solver.NumVariables())
@@ -83,11 +83,11 @@ def ScalarOptimisedWeight():
         print('\nSolution:')
         print('Objective value =', solver.Objective().Value()/100)
         for j in range(solver.NumVariables()):
-            # if j == 13:
-            #    print('\nCategory distance : ')
+            if j == 13:
+               print('\nCategory distance : ')
             if j < 13:
                 print(colLabel[j], ' = ', x[j].solution_value())
-            # else:
-            #     print(colLabel[j], ' = ', x[j].solution_value()/100)
+            else:
+                print(colLabel[j], ' = ', x[j].solution_value()/100)
     else:
         print('The problem does not have an optimal solution.')
