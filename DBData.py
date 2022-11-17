@@ -461,11 +461,14 @@ def query(path, qtype, k=5):
     distListEMD = []
     for row in DB:
         if row["File name"] not in ["avg","std","min","max"]:
-            # TODO : Simply append and quickSort afterwards
             if qtype.lower() == "euclidean" :
-                bisect.insort(distListEucl, euclidianDist(queryFeatures,row))
+                distListEucl.append(euclidianDist(queryFeatures, row))
             elif qtype.lower() == "emd" :
-                bisect.insort(distListEMD, emDist(queryFeatures,row))
+                distListEMD.append(emDist(queryFeatures, row))
+    if qtype.lower() == "euclidean":
+        distListEucl.sort(key=lambda val: val[0])
+    elif qtype.lower() == "emd":
+        distListEMD.sort(key=lambda val: val[0])
     if qtype.lower() == "euclidean":
         return [(os.path.relpath(p2,'.'), dist, dContrib) for dist, p1, p2, dContrib in distListEucl[:k]]
     elif qtype.lower() == "emd":

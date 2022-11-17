@@ -389,7 +389,7 @@ if len(sys.argv) == 4:
        Save screenshot of the query mesh and the result in <OUTPUT FOLDER>/screenshot/
        Show the 4 most similar object in a pyplot windows (used for illustration purpose in the report) """
     if sys.argv[1] == "query":
-        queryRes = db.query(sys.argv[2], "euclidean", k=sys.argv[3])
+        queryRes = db.query(sys.argv[2], "euclidean", k=int(sys.argv[3]))
         db.exportQueryRes(sys.argv[2], queryRes)
 
     """Query for the k most similar object in the normalised database
@@ -420,5 +420,5 @@ if len(sys.argv) == 4:
        Show the 4 most similar object in a pyplot windows (used for illustration purpose in the report) """
     if sys.argv[1] == "annQuery":
         tree, rowLabel = db.buildTree() # leaf_size = 4
-        queryRes = db.annQuery(sys.argv[2], sys.argv[3], tree, rowLabel)
+        queryRes = db.annQuery(sys.argv[2], int(sys.argv[3]), tree, rowLabel)
         db.exportQueryRes(sys.argv[2], queryRes)
