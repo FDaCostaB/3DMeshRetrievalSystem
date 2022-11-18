@@ -1,8 +1,8 @@
 import os.path
 from enum import Enum
 from featureName import featureHistoBins, featureName
-settings = {}
 
+settings = {}
 
 class settingsName(Enum):
     dbPath = "DATABASE FOLDER PATH"
@@ -39,9 +39,9 @@ def readSettings():
                 settings[name] = value
                 settings[settingsName.outputDBPath.value] = os.path.join(value,'NormaliseDB')
             elif name=='3D MESH EXTENSION':
-                settings[name] = value.lower()
+                settings[name] = "."+value.lower()
             elif name=='IMAGE MESH EXTENSION':
-                settings[name] = value.lower()
+                settings[name] = "."+value.lower()
             elif name=='EXPECTED NUMBERS OF VERTICES':
                 settings[name] = int(value)
             elif name=='NB OF VERTICES EPSILON':
@@ -70,4 +70,7 @@ def readSettings():
             elif name=='POV SCREENSHOT':
                 settings[name] = value
             elif name=='DEBUG':
-                settings[name] = bool(value)
+                if value.lower() == "false":
+                    settings[name] = False
+                elif value.lower() == "true":
+                    settings[name] = True

@@ -16,7 +16,6 @@ from sklearn.neighbors import KDTree
 
 # ---------------------------- STEP 2 ----------------------------------------#
 def plotHistogram(df, feature, n_bins=20, size_x=10, size_y=7):
-    outputDir = os.path.join(os.path.realpath(settings[settingsName.outputPath.value]),"histograms")
     if feature == dataName.PCA.value:
         parsedValues = []
         pca = []
@@ -39,9 +38,9 @@ def plotHistogram(df, feature, n_bins=20, size_x=10, size_y=7):
                     pca.append(curr)
                     curr = []
         alignementVal = [[abs(Math.dotProduct(eigenvectors[0],[1,0,0])), abs(Math.dotProduct(eigenvectors[1],[0,1,0])),abs(Math.dotProduct(eigenvectors[2],[0,0,1]))] for eigenvectors in pca]
-        XYZplotValue(alignementVal,feature,outputDir)
+        XYZplotValue(alignementVal,feature)
     else:
-        plotValue(df, feature, outputDir, n_bins, size_x, size_y)
+        plotValue(df, feature, n_bins, size_x, size_y)
 
 
 def histograms(feature):
@@ -51,7 +50,7 @@ def histograms(feature):
     plotHistogram(df, feature, 19)
 
 
-def exportDBData(fromOriginalDB):
+def exportDBProp(fromOriginalDB):
     if fromOriginalDB:
         dbDir = os.path.realpath(settings[settingsName.dbPath.value])
     else :
@@ -87,10 +86,8 @@ def exportDBFeatures():
                     meshesData.append(data)
             FileIt.close()
     if normalisationType == "Standardisation":
-        print(normalisationType)
         meshesData = Math.standardisation(meshesData)
     elif normalisationType == "MinMax":
-        print(normalisationType)
         meshesData = Math.minMaxNormalisation(meshesData)
     csvExport('features.csv', meshesData)
     return meshesData
@@ -110,20 +107,20 @@ def normalise():
         normCategory(os.path.realpath(dir))
 
 
-def plotValue(df, feature, outputDir, n_bins=20, size_x=10, size_y=7):
+def plotValue(df, feature, n_bins=20, size_x=10, size_y=7):
     fig, axs = plt.subplots(1, 1, figsize=(size_x, size_y), tight_layout=True)
     plt.xlabel(feature)
     plt.ylabel("Number of mesh(es)")
-    if feature == dataName.SIDE_SIZE.value and outputDir==os.path.realpath('output/histograms'): n_bins = [0.99+i*0.001 for i in range(21)]
-    if feature == dataName.DIST_BARYCENTER.value and outputDir==os.path.realpath('output/histograms'): n_bins = [0+i*0.0001 for i in range(11)]
-    if feature == dataName.SIDE_SIZE.value and outputDir==os.path.realpath('output/histograms'): n_bins = [0+i*0.1 for i in range(21)]
-    if feature == dataName.FACE_NUMBERS.value and outputDir==os.path.realpath('output/histograms'): n_bins = [9000+i*100 for i in range(21)]
-    if feature == dataName.VERTEX_NUMBERS.value and outputDir==os.path.realpath('output/histograms'): n_bins = [4900+i*10 for i in range(21)]
+    if feature == dataName.SIDE_SIZE.value : n_bins = [0.99+i*0.001 for i in range(21)]
+    if feature == dataName.DIST_BARYCENTER.value : n_bins = [0+i*0.0001 for i in range(11)]
+    if feature == dataName.SIDE_SIZE.value : n_bins = [0+i*0.1 for i in range(21)]
+    if feature == dataName.FACE_NUMBERS.value : n_bins = [9000+i*100 for i in range(21)]
+    if feature == dataName.VERTEX_NUMBERS.value : n_bins = [4900+i*10 for i in range(21)]
     axs.hist(df[feature], bins=n_bins)
-    plt.savefig(outputDir+ "\\" +feature.lower()+".png")
+    plt.savefig(os.path.join(os.path.realpath(settings[settingsName.outputPath.value]),"histograms", feature.lower() + settings[settingsName.imageExtension.value]))
 
 
-def XYZplotValue(list, feature, outputDir,size_x=10, size_y=7):
+def XYZplotValue(list, feature,size_x=10, size_y=7):
     fig, axs = plt.subplots(1,1,figsize=(size_x, size_y), tight_layout=True)
     data = [getIndexList(0, list), getIndexList(1, list), getIndexList(2, list)]
     colors = ['blue', 'red', 'yellow']
@@ -136,7 +133,7 @@ def XYZplotValue(list, feature, outputDir,size_x=10, size_y=7):
     plt.xlabel(feature)
     plt.ylabel('count')
     plt.legend()
-    plt.savefig(outputDir+ "\\" +feature.lower()+".png")
+    plt.savefig(os.path.join(os.path.realpath(settings[settingsName.outputPath.value]), "histograms", feature.lower()+settings[settingsName.imageExtension.value]))
 
 
 def normCategory(catName):
@@ -187,7 +184,7 @@ def viewCategory(catName, fromOriginalDB):
                 i+=1
         FileIt.close()
     plt.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=0.95, wspace=0, hspace=0.05)
-    plt.savefig(outPath + "/meshes_overview.jpg")
+    plt.savefig(outPath + "/meshes_overview"+ settings[settingsName.imageExtension.value])
     if(debug):
         plt.show()
 
@@ -200,7 +197,7 @@ def exportFeatures(funcName):
     nbCat=0
     for dir in os.scandir(dbDir):
         if os.path.isdir(dir):
-            catVal=getFeaturesHistogram(os.path.join(dbDir, dir.name), funcName)
+            catVal = getFeaturesHistogram(os.path.join(dbDir, dir.name), funcName)
             if featureDimension[funcName]==1:
                 dbScalarValue.append(catVal)
             elif featureDimension[funcName]==2:
@@ -235,6 +232,7 @@ def getFeaturesHistogram(path, funcName):
 
 
 def drawFeatures(funcName):
+    print(funcName)
     dbScalarValue, dbHistValue, nbCat = exportFeatures(funcName)
     dbDir= settings[settingsName.outputDBPath.value]
     nbOfLine = (nbCat // 3)
@@ -257,7 +255,7 @@ def drawFeatures(funcName):
             axs[i // 3, i % 3].set_visible(False)
             i+=1
         plt.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=0.9, wspace=0.3, hspace=0.4)
-        plt.savefig(os.path.join(outputDir,funcName + ".jpg"))
+        plt.savefig(os.path.join(outputDir,funcName + settings[settingsName.imageExtension.value]))
         plt.cla()
         plt.clf()
 
@@ -274,20 +272,20 @@ def drawFeatures(funcName):
             axs[i // 3, i % 3].set_visible(False)
             i += 1
         plt.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=0.95, wspace=0.2, hspace=0.3)
-        plt.savefig("./output/" + funcName + ".jpg")
+        plt.savefig(os.path.join(outputDir, funcName + settings[settingsName.imageExtension.value]))
 
 
-def drawCategoryFeatures(functionsName):
-    if functionsName == "all":
-        functionsName = [f.value for f in featureName]
-    elif functionsName == "histogram":
+def drawCategoryFeatures(functionName):
+    if functionName == "all":
+        functionsName = [f.value for f in featureName if f != featureName.FILENAME and f != featureName.DIRNAME]
+    elif functionName == "histogram":
         functionsName = [featureName.A3.value, featureName.D1.value , featureName.D2.value, featureName.D3.value, featureName.D4.value]
-    elif functionsName == "scalar":
+    elif functionName == "scalar":
         functionsName = [featureName.SURFACE_AREA.value, featureName.VOLUME.value , featureName.COMPACTNESS.value,
                          featureName.SPHERICITY.value, featureName.RECTANGULARITY.value, featureName.DIAMETER.value,
                          featureName.ECCENTRICITY.value, featureName.CENTROID.value]
     else:
-        functionsName = [functionsName]
+        functionsName = [functionName]
     for funcName in functionsName:
         drawFeatures(funcName)
 
@@ -401,7 +399,6 @@ def exportStat(distanceFunc):
                 distPairFeat = np.array([distList[feature.value] for distList in pairDist[pairKey]])
                 avg[feature.value]= distPairFeat.mean()
         resAvg.append(avg)
-
     csvExport("catAvg.csv",resAvg)
     return resAvg
 
@@ -465,9 +462,13 @@ def query(path, qtype, k=5):
     for row in DB:
         if row["File name"] not in ["avg","std","min","max"]:
             if qtype.lower() == "euclidean" :
-                bisect.insort(distListEucl, euclidianDist(queryFeatures,row))
+                distListEucl.append(euclidianDist(queryFeatures, row))
             elif qtype.lower() == "emd" :
-                bisect.insort(distListEMD, emDist(queryFeatures,row))
+                distListEMD.append(emDist(queryFeatures, row))
+    if qtype.lower() == "euclidean":
+        distListEucl.sort(key=lambda val: val[0])
+    elif qtype.lower() == "emd":
+        distListEMD.sort(key=lambda val: val[0])
     if qtype.lower() == "euclidean":
         return [(os.path.relpath(p2,'.'), dist, dContrib) for dist, p1, p2, dContrib in distListEucl[:k]]
     elif qtype.lower() == "emd":
@@ -589,7 +590,6 @@ def evaluateQuery():
                 elif dType.lower() == "euclidean":
                     evalResEucl.append(rowRes)
 
-
                 counter += 1
                 if counter % 40 == 0: print(str(int(counter / 760 * 100)) + " %")
 
@@ -626,31 +626,3 @@ def timeQuery():
     print(time.max())
     print("Min : ")
     print(time.min())
-
-def ROC(queryPath, dType):
-    queryRes = query(queryPath, dType, 380)
-    mesh = Mesh(queryPath)
-    cat = mesh.dataFilter()[dataName.CATEGORY.value]
-    roc = []
-
-    for k in range(1,381):
-        querySize = queryRes[:k]
-        tP = 0
-        fP = 0
-        for q in querySize:
-            rPath = q[0]
-            rClass = rPath.split("\\")[0]
-            if rClass == cat:
-                tP += 1
-            else:
-                fP += 1
-        fN = 20 - tP
-        tN = 380 - fP
-        Sensitivity = tP / (tP + fN)
-        Specificity = tN / (fP + tN)
-        roc.append([Sensitivity,Specificity])
-    auroc = sum([val[0] for val in roc])/len(roc)
-    print(queryPath)
-    print(auroc)
-    plt.scatter([val[0] for val in roc], [val[1] for val in roc],s=2,c="black")
-    plt.show()
