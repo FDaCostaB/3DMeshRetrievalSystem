@@ -11,6 +11,7 @@ import DBData as db
 from functools import partial
 from concurrent import futures
 from Settings import readSettings, settings, settingsName
+import time
 
 import os
 
@@ -49,16 +50,20 @@ class Root(FloatLayout):
 
     def addImage(self, iPath, distance):
         layout = GridLayout(cols=1)
-        layout.add_widget(Image(source = iPath, allow_stretch=True,height=200))
+        newImg = Image(source = iPath, allow_stretch=True,height=200)
+        newImg.reload()
+        layout.add_widget(newImg)
         layout.add_widget(Label(text=distance,height=10))
         self.widget_list.add_widget(layout)
 
     def addWidgets(self,results):
         parDir = os.path.join(os.path.realpath('output'), 'screenshot')
+        self.widget_list.clear_widgets()
         for dir in os.scandir(parDir):
             print(dir.name)
             if dir.name == "query.jpg":
                 self.image_input.source = os.path.realpath(dir)
+                self.image_input.reload()
             else:
                 n = dir.name.split(".")[0]
                 self.addImage(os.path.realpath(dir),results[n])
@@ -66,11 +71,13 @@ class Root(FloatLayout):
     def load(self, path, filename):
         queryPath = os.path.join(path, filename[0])
         k = int(self.slider.value)
-        with futures.ThreadPoolExecutor(max_workers=5) as executor:
+        with futures.ProcessPoolExecutor(max_workers=5) as executor:
+            cleanDir()
             future = executor.submit(db.query, queryPath, "emd",k)
             queryRes = future.result()
             future = executor.submit(db.saveQueryRes,queryPath, queryRes)
             imageDist = future.result()
+        time.sleep(2)
         self.dismiss_popup()
         print(imageDist)
         self.addWidgets(imageDist)

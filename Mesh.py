@@ -8,7 +8,7 @@ from DebugLog import debugLvl, debugLog
 from parse import getFieldList, getIndexList
 import polyscopeUI as psUI
 import Math
-from Settings import settings,settingsName
+from Settings import settings,settingsName,readSettings
 
 class Mesh:
     def __init__(self, meshPath):
@@ -41,7 +41,7 @@ class Mesh:
     def normaliseVertices(self):
         LIMIT = 5
         i = 0
-
+        readSettings()
         expectedVerts = settings[settingsName.expectedVerts.value]
         eps = settings[settingsName.epsVerts.value]
 
