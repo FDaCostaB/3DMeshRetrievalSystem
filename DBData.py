@@ -2,7 +2,6 @@ import os
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import numpy as np
-import bisect
 import Math
 from Features import FeaturesExtract, euclidianDist, emDist
 from parse import getIndexList
@@ -289,7 +288,7 @@ def drawCategoryFeatures(functionName):
     for funcName in functionsName:
         drawFeatures(funcName)
 
-
+# ---------------------------- STEP 3 ----------------------------------------#
 def parseFeatures():
     df = pd.read_csv(os.path.join(os.path.realpath(settings[settingsName.outputPath.value]), "features.csv"))
     DB = []
@@ -369,7 +368,7 @@ def parseDistMatrix(distanceFunc):
     return distMatrix, rowLabel
 
 
-def exportStat(distanceFunc):
+def exportFeaturesDist(distanceFunc):
     DB, norm1, norm2, normalisationType = parseFeatures()
     categories = list(set([obj['Folder name'] for obj in DB]))
     categories.sort()
@@ -402,6 +401,7 @@ def exportStat(distanceFunc):
     csvExport("catAvg.csv",resAvg)
     return resAvg
 
+# ---------------------------- STEP 4/5 ----------------------------------------#
 def buildTree():
     DB, norm1, norm2, normalisationType = parseFeatures()
 
@@ -424,6 +424,8 @@ def buildTree():
         i+=1
     tree = KDTree(featMat, leaf_size=4)
     return tree, rowLabel
+
+
 def annQuery(path, k, tree, rowLabel):
     mesh = Mesh(os.path.realpath(path))
     mesh.resample()
@@ -436,11 +438,12 @@ def annQuery(path, k, tree, rowLabel):
     dd, ii = tree.query([[queryFeatures[key] for key in queryFeatures.keys() if key not in [featureName.DIRNAME.value, featureName.FILENAME.value]]], k=k)
     return [(rowLabel[index], 0, []) for index in ii[0]]
 
+
 def query(path, qtype, k=5):
     mesh = Mesh(os.path.realpath(path))
     mesh.resample()
     mesh.saveMesh(os.path.join(settings[settingsName.outputPath.value],"normaliseQueriedMesh"))
-    mesh = FeaturesExtract(os.path.join(settings[settingsName.outputPath.value],"normaliseQueriedMesh."+settings[settingsName.meshExtension.value]))
+    mesh = FeaturesExtract(os.path.join(settings[settingsName.outputPath.value],"normaliseQueriedMesh"+settings[settingsName.meshExtension.value]))
 
     queryFeatures = mesh.featureFilter(10000)
     queryFeatures[featureName.FILENAME.value] = os.path.basename(path)
@@ -488,6 +491,7 @@ def saveQueryRes(queryShape, res):
         i += 1
     return results
 
+
 def exportQueryRes(queryShape, res):
     fig, axs = plt.subplots(1, 5, figsize=(18, 4))
     i = 1
@@ -518,7 +522,7 @@ def exportQueryRes(queryShape, res):
     plt.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=0.95, wspace=0.5, hspace=0.05)
     plt.show()
 
-
+# ---------------------------- STEP 6 ----------------------------------------#
 def evaluateQuery():
     df = pd.read_csv(os.path.join(os.path.realpath(settings[settingsName.outputPath.value]), "features.csv"))
     counter = 0

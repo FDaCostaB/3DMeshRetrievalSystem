@@ -123,7 +123,7 @@ if len(sys.argv) == 2:
         Print the optimal weight for each features in the command line and the average distance for each category to another using those weight
         The optimal weight is the weight maximizing the objective function regarding the constraints given"""
     if sys.argv[1] == "optimisedWeigth":
-        lp.ScalarOptimisedWeight()
+        lp.optimisedWeight()
 
 if len(sys.argv) == 3:
 
@@ -331,7 +331,7 @@ if len(sys.argv) == 3:
     if sys.argv[1] == "exportStats":
         for key in featureName.featureWeight:
             featureName.featureWeight[key] = 1
-        resAvg, resStd = db.exportStat(sys.argv[2])
+        resAvg, resStd = db.exportFeaturesDist(sys.argv[2])
 
 if len(sys.argv) == 4:
 

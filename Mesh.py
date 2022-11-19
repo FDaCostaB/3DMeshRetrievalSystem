@@ -92,7 +92,7 @@ class Mesh:
             acc[z] += np.sign(center[z]) * center[z] ** 2
         return acc
 
-    def principalAxisAlignement(self, doDebug=False):
+    def principalAxisAlignement(self):
         stats = self.dataFilter()
         pca = stats[dataName.PCA.value]
         for vect in pca:
@@ -110,7 +110,7 @@ class Mesh:
         self.ms.add_mesh(transformedMesh)
         self.mesh = self.ms.current_mesh()
 
-    def flipMomentTest(self, doDebug=False):
+    def flipMomentTest(self):
         moment = np.sign(self.momentOrder())
         facesMat = self.mesh.face_matrix()
         vertexMat = self.mesh.vertex_matrix()
@@ -122,7 +122,7 @@ class Mesh:
         self.ms.add_mesh(transformedMesh)
         self.mesh = self.ms.current_mesh()
 
-    def normalise(self, showComparison=False):
+    def normalise(self):
         stats = self.dataFilter()
         self.ms.compute_matrix_from_translation(traslmethod='XYZ translation', axisx=-1 * stats[dataName.BARYCENTER.value][0],
                                            axisy=-1 * stats[dataName.BARYCENTER.value][1],
@@ -134,16 +134,16 @@ class Mesh:
                                                              customcenter=stats[dataName.BARYCENTER.value],
                                                              uniformflag=True)
 
-        if showComparison:
+        if settings[settingsName.debug.value]:
             self.compare()
 
-    def resample(self, showComparison=False):
+    def resample(self):
 
         self.clean()
         self.normaliseVertices()
         self.normalise()
 
-        if showComparison:
+        if settings[settingsName.debug.value]:
             self.compare()
 
     def getNbComponents(self):
@@ -212,7 +212,7 @@ class Mesh:
         if path==None:
             self.ms.save_current_mesh(os.path.splitext(newPath)[0]+"."+extension)
         else:
-            self.ms.save_current_mesh(path+"."+extension)
+            self.ms.save_current_mesh(path+extension)
 
     def render(self):
         psUI.setPolyscopeSetting(1280, 720)
@@ -221,7 +221,6 @@ class Mesh:
         ps_cloud.set_radius(0.002)
         ps.register_surface_mesh("my mesh", self.ms.mesh(0).vertex_matrix(), self.ms.mesh(0).face_matrix())
         ps.show()
-
 
     def screenshot(self,saveTo, fileName=None):
         camLocation = settings[settingsName.screenPOV.value]
@@ -239,4 +238,5 @@ class Mesh:
         if camLocation == "straight" :
             ps.set_view_projection_mode('orthographic')
             ps.look_at((0., -0.5 , 0.), (0., 0., 0.))
-        ps.screenshot(os.path.join(saveTo,fileName+'.jpg'), False)
+        print(os.path.join(saveTo,fileName+'.jpg'))
+        ps.screenshot(os.path.join(saveTo,fileName+'.jpg'))

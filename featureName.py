@@ -1,6 +1,7 @@
 from enum import Enum
 from math import pi
 
+
 class featureName(Enum):
     FILENAME = "File name"
     DIRNAME = "Folder name"
@@ -33,9 +34,3 @@ featureHistoBins = {}
 
 histoUpperBound = { featureName.A3.value : pi, featureName.D1.value : 3**(1/2)/2, featureName.D2.value : 3**(1/2),
                      featureName.D3.value : (3/4)**(1/2), featureName.D4.value : (1/6)**(1/3) }
-
-def setWeight(key, val):
-    if key in featureWeight.keys():
-        featureWeight[key] = int(val)
-    else:
-        raise Exception("Cannot set weight : "+key+" is not valid")

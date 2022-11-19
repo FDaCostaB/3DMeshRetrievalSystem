@@ -28,10 +28,11 @@ class FeaturesExtract:
 # ---------------------------------------------------------------------------------------------- #
 
     def featureFilter(self,nbOfSample=None):
-        res = { featureName.DIRNAME.value : self.category, featureName.FILENAME.value : self.fileName, featureName.CENTROID.value : Math.length(self.centroid()), featureName.SURFACE_AREA.value : self.surfaceArea(), featureName.VOLUME.value : self.volume(),
-                featureName.COMPACTNESS.value : self.compactness(), featureName.SPHERICITY.value : self.sphericity(),
-                featureName.RECTANGULARITY.value : self.rectangularity(), featureName.DIAMETER.value : self.diameter(),
-                featureName.ECCENTRICITY.value : self.eccentricity()}
+        res = { featureName.DIRNAME.value : self.category, featureName.FILENAME.value : self.fileName,
+                featureName.CENTROID.value : Math.length(self.centroid()), featureName.SURFACE_AREA.value : self.surfaceArea(),
+                featureName.VOLUME.value : self.volume(), featureName.COMPACTNESS.value : self.compactness(),
+                featureName.SPHERICITY.value : self.sphericity(), featureName.RECTANGULARITY.value : self.rectangularity(),
+                featureName.DIAMETER.value : self.diameter(), featureName.ECCENTRICITY.value : self.eccentricity()}
 
         if nbOfSample is None: nbOfSample = settings[settingsName.nbSample.value]
         A3 = self.A3(nbOfSample)
@@ -214,10 +215,9 @@ class FeaturesExtract:
             return self.diameter()
         elif funcName== featureName.ECCENTRICITY.value:
             return self.eccentricity()
-        
 
     # Returns list containing a list of face for each component
-    def getComponentsFaceList(self, debug=False):
+    def getComponentsFaceList(self):
         self.ms.compute_color_by_conntected_component_per_face()
         face_colors = self.mesh.face_color_matrix()
         components = []
@@ -237,7 +237,7 @@ class FeaturesExtract:
         barycenter_cloud = []
         for comp in components:
             barycenter_cloud.append(self.barycenter(comp))
-        if debug:
+        if settings[settingsName.debug.value]:
             ps.init()
             ps_cloud = ps.register_point_cloud("Component barycenter", np.array(barycenter_cloud), color=[1, 0, 0])
             ps_cloud.set_radius(0.01)
@@ -258,7 +258,6 @@ class FeaturesExtract:
         min = self.mesh.bounding_box().min()
         max = self.mesh.bounding_box().max()
         return (max[0] - min[0]) * (max[1] - min[1]) * (max[2] - min[2])
-
 
     def rectangularity(self):
         return self.volume()/self.volumeOBB()
@@ -329,6 +328,7 @@ class FeaturesExtract:
         ps.register_surface_mesh("Before Mesh", self.ms.mesh(0).vertex_matrix(), self.ms.mesh(0).face_matrix())
         ps.register_surface_mesh("Bounding box", np.array(vertex), np.array(faces))
         ps.show()
+
 
 def euclidianDist(f1, f2):
     sumDist = 0

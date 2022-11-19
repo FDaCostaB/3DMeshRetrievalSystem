@@ -5,7 +5,7 @@ import os
 from Settings import settings, settingsName
 
 
-def read_data_model():
+def readDataModel():
     df = pd.read_csv(os.path.join(os.path.realpath(settings[settingsName.outputPath.value]), "catAvg.csv"))
     catDistMat = np.zeros((df.shape[0],df.shape[1]-2))
     colLabel = []
@@ -44,8 +44,8 @@ def read_data_model():
     data['num_constraints'] = constraintCoeffs.shape[0]
     return data, coefSumConstraints, newRowLabel, colLabel
 
-def ScalarOptimisedWeight():
-    data, coefSumConstraints, rowLabel, colLabel = read_data_model()
+def optimisedWeight():
+    data, coefSumConstraints, rowLabel, colLabel = readDataModel()
 
     # Instantiate a Glop solver, naming it LinearExample.
     solver = pywraplp.Solver.CreateSolver('SCIP')
