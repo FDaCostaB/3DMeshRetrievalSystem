@@ -485,7 +485,7 @@ def saveQueryRes(queryShape, res):
     i = 0
     results = {}
     for path,dist,dContrib in res:
-        mesh = Mesh(os.path.join(os.path.realpath(settings[settingsName.outputDBPath.value]),path))
+        mesh = Mesh(os.path.join(os.path.realpath(settings[settingsName.outputDBPath.value]), path))
         mesh.screenshot(os.path.join(os.path.realpath(settings[settingsName.outputPath.value]), 'screenshot'), fileName=str(i))
         results[str(i)] = str("%.4f" % dist)
         i += 1

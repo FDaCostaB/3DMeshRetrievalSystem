@@ -60,7 +60,6 @@ class Root(FloatLayout):
         parDir = os.path.join(os.path.realpath('output'), 'screenshot')
         self.widget_list.clear_widgets()
         for dir in os.scandir(parDir):
-            print(dir.name)
             if dir.name == "query.jpg":
                 self.image_input.source = os.path.realpath(dir)
                 self.image_input.reload()
@@ -79,7 +78,6 @@ class Root(FloatLayout):
             imageDist = future.result()
         time.sleep(2)
         self.dismiss_popup()
-        print(imageDist)
         self.addWidgets(imageDist)
 
     def save(self, path, filename):

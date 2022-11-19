@@ -238,5 +238,4 @@ class Mesh:
         if camLocation == "straight" :
             ps.set_view_projection_mode('orthographic')
             ps.look_at((0., -0.5 , 0.), (0., 0., 0.))
-        print(os.path.join(saveTo,fileName+'.jpg'))
         ps.screenshot(os.path.join(saveTo,fileName+'.jpg'))
