@@ -105,8 +105,10 @@ Factory.register('SaveDialog', cls=SaveDialog)
 
 def cleanDir():
         parDir = os.path.join(os.path.realpath('output'), 'screenshot')
+        os.makedirs(parDir, exist_ok=True)
         for dir in os.scandir(parDir):
             os.remove(dir)
+
 if __name__ == '__main__':
     readSettings()
     tree, rowLabel = db.buildTree()

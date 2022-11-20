@@ -110,11 +110,11 @@ def plotValue(df, feature, n_bins=20, size_x=10, size_y=7):
     fig, axs = plt.subplots(1, 1, figsize=(size_x, size_y), tight_layout=True)
     plt.xlabel(feature)
     plt.ylabel("Number of mesh(es)")
-    if feature == dataName.SIDE_SIZE.value : n_bins = [0.99+i*0.001 for i in range(21)]
-    if feature == dataName.DIST_BARYCENTER.value : n_bins = [0+i*0.0001 for i in range(11)]
-    if feature == dataName.SIDE_SIZE.value : n_bins = [0+i*0.1 for i in range(21)]
-    if feature == dataName.FACE_NUMBERS.value : n_bins = [9000+i*100 for i in range(21)]
-    if feature == dataName.VERTEX_NUMBERS.value : n_bins = [4900+i*10 for i in range(21)]
+    # if feature == dataName.SIDE_SIZE.value : n_bins = [0.99+i*0.001 for i in range(21)]
+    # if feature == dataName.DIST_BARYCENTER.value : n_bins = [0+i*0.0001 for i in range(11)]
+    # if feature == dataName.SIDE_SIZE.value : n_bins = [0+i*0.1 for i in range(21)]
+    # if feature == dataName.FACE_NUMBERS.value : n_bins = [9000+i*100 for i in range(21)]
+    # if feature == dataName.VERTEX_NUMBERS.value : n_bins = [4900+i*10 for i in range(21)]
     axs.hist(df[feature], bins=n_bins)
     plt.savefig(os.path.join(os.path.realpath(settings[settingsName.outputPath.value]),"histograms", feature.lower() + settings[settingsName.imageExtension.value]))
 

@@ -57,7 +57,7 @@ def optimisedWeight():
     x = {}
     for j in range(data['num_vars']):
         if j<13:
-            x[j] = solver.IntVar(1, 10, 'x[%i]' % j)
+            x[j] = solver.IntVar(1, 50, 'x[%i]' % j)
         else:
             x[j] = solver.IntVar(0, 200, 'x[%i]' % j)
     print('Number of variables =', solver.NumVariables())

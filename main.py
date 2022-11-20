@@ -337,7 +337,7 @@ if len(sys.argv) == 3:
     if sys.argv[1] == "exportFeaturesDist":
         for key in featureName.featureWeight:
             featureName.featureWeight[key] = 1
-        resAvg, resStd = db.exportFeaturesDist(sys.argv[2])
+        resAvg = db.exportFeaturesDist(sys.argv[2])
 
 if len(sys.argv) == 4:
 
