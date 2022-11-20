@@ -1,2 +1,39 @@
 # 3DShapeRetrieval
 3D shape retrieval system
+
+All the output file (csv or image) are saved in the <OUTPUT FOLDER> given in the settings file
+
+Step 1: Read and view the data
+main.pyrender <filepath> : Display a 3D mesh
+
+Step 2: Preprocessing and cleaning
+main.py analyze <filepath> : Print property of a 3D mesh in the command line
+main.py statistics <'original'|'normalized'> : Export properties of all 3D mesh of the database (original or normalized) given as parameter and save the result in a CSV file
+main.py histograms <dataname> : Export histogram of the data given in parameter based on the data save by "main.py statistics <'original'|'normalized'>"
+main.py category-normalisation <folderName> : Normalizing a folder (i.e. a category) of the database and save normalized meshes in <OUTPUT FOLDER>/NormaliseDB/<folderName>
+main.py full-normalisation <folderName> : Normalizing the initial database and save it to the <OUTPUT FOLDER>
+
+Step 3: Feature extraction
+main.py features : Export extracted features of all 3D mesh of the normalized database located at <OUTPUT FOLDER>/NormaliseDB/ and save a CSV filr
+main.py histogram-features <featureName>: Export histogram of the features
+
+Step 4: Querying
+main.py query <filepath> <k>: Query for the k most similar object to <filepath> in the normalised database
+fileChooser.py : launch a user interface to query the database convieniently
+
+Step 5: Scalability
+main.py annQuery <filepath> :Query for the k most similar object to <filepath> in the normalised database using ANN (i.e a k-d tree)
+main.py time <distFunc> : Measure time taken by 380 queries (each object of the DB queried once)
+main.py distanceMatrix <distanceFunction> : Export a distance matrix from one object to each other in the normalize database using <distanceFunction>
+main.py tsne <distanceFunction> : Reduct the features to a 2D features vector based on a precomputed distance matrix given by "distanceMatrix <distanceFunction>"
+
+Step 6: Evaluation
+main.py evaluate : Measure efficiency of the retrieval system regarding different metrics and save the result in a CSV file
+
+Optimising weight
+main.py exportFeaturesDist <distFunc> : Compute the average feature distance for each feature between categories using <distanceFunction> distance type
+main.py optimisedWeight : Compute the optimised integer weight for each features to improve the global performance of the retrieval system (i.e. decreasing the number of Type I and type II error)
+
+Debug features:
+main.py view-category <folderName> <'original'|'normalized'> : Show all 20 object of a category from the same POV to visually check the normalisation step
+       
