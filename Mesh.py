@@ -210,7 +210,7 @@ class Mesh:
 
         #Save the file in off format
         if path==None:
-            self.ms.save_current_mesh(os.path.splitext(newPath)[0]+"."+extension)
+            self.ms.save_current_mesh(os.path.splitext(newPath)[0]+extension)
         else:
             self.ms.save_current_mesh(path+extension)
 
