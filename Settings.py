@@ -1,7 +1,6 @@
 import os.path
 from enum import Enum
 from featureName import featureHistoBins, featureName
-
 settings = {}
 
 class settingsName(Enum):
@@ -22,11 +21,15 @@ class settingsName(Enum):
     normType ="NORMALISATION TYPE"
     screenPOV = "POV SCREENSHOT"
     debug = "DEBUG"
+    distanceFunc = "DISTANCE FUNCTION"
+    tree = "TREE"
+    rowLabel = "ROW LABEL"
 
 
 def readSettings():
     f = open("settings.mr", "r")
     lines = f.readlines()
+    settings["DISTANCE FUNCTION"] = "euclidean"
     for line in lines:
         if len(line) > 0 and line[0]!='#' and line[0]!='\n':
             name = line.split('=')[0]
@@ -74,3 +77,8 @@ def readSettings():
                     settings[name] = False
                 elif value.lower() == "true":
                     settings[name] = True
+
+
+def setDistance(distFunc):
+    if distFunc.lower() in ["eucl","emd","ann"]:
+        settings["DISTANCE FUNCTION"] = distFunc.lower()

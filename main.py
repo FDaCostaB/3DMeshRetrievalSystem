@@ -11,6 +11,12 @@ import warnings
 warnings.filterwarnings("ignore")
 readSettings()
 
+if sys.argv[1].lower() in ["help","-h"]:
+    f = open("help.txt", "r")
+    lines = f.readlines()
+    for line in lines:
+        print(line, end="")
+
 if len(sys.argv) == 2:
     """Normalizing the initial database
 
@@ -54,28 +60,6 @@ if len(sys.argv) == 2:
         Export a CSV containing properties of each object of the database given in parameter """
     if sys.argv[1] == "features":
         db.exportDBFeatures()
-
-    """Measure time taken by 380 queries (each object of the DB queried once)
-       Requires :
-        Normalized database located at <OUTPUT FOLDER>/NormaliseDB/ given by "main.py full-normalisation"
-
-       Step of the assignment
-       -----------------------
-        Step 5 (compare ANN)
-
-       Command
-       -------
-        main.py time
-
-       Parameters
-       ----------
-        None
-
-       Returns/Output
-       --------------
-        Print in the command line Min, Max, Mean, Standard deviation, Median taken by 380 queries (each object of the DB queried once)"""
-    if sys.argv[1] == "time":
-        db.timeQuery()
 
     """Measure efficiency of the retrieval system regarding different metrics
        Requires :
@@ -237,7 +221,7 @@ if len(sys.argv) == 3:
     if sys.argv[1] == "category-normalisation":
         db.normCategory(sys.argv[2])
 
-    """Export histogram of the feature given in parameter based on the data save by "main.py features"
+    """Export histogram of the feature 
        Requires :
         None
 
@@ -284,7 +268,7 @@ if len(sys.argv) == 3:
     if sys.argv[1] == "distanceMatrix":
         db.exportDistanceMatrix(sys.argv[2])
 
-    """Reduct the features to a 2D features vector based ont the distance matrix based between the N-dimensionnal vector
+    """Reduct the features to a 2D features vector based on the distance matrix based between the N-dimensionnal vector
        Requires :
         distanceMatrix given by "main.py distanceMatrix <distanceFunction>"
         See requirements of "main.py distanceMatrix <distanceFunction>"
@@ -308,10 +292,32 @@ if len(sys.argv) == 3:
         distMatrix, rowLabel = db.parseDistMatrix(sys.argv[2])
         tsne(distMatrix, rowLabel, 100000)
 
+    """Measure time taken by 380 queries (each object of the DB queried once)
+       Requires :
+        Normalized database located at <OUTPUT FOLDER>/NormaliseDB/ given by "main.py full-normalisation"
+
+       Step of the assignment
+       -----------------------
+        Step 5 (compare ANN)
+
+       Command
+       -------
+        main.py time
+
+       Parameters
+       ----------
+        distanceFunction : "emd", "euclidean" or "ann"
+
+       Returns/Output
+       --------------
+        Print in the command line Min, Max, Mean, Standard deviation, Median taken by 380 queries (each object of the DB queried once)"""
+    if sys.argv[1] == "time":
+        if sys.argv[2].lower() in ["euclidean","emd","ann"]:
+            db.timeQuery(sys.argv[2])
+
     """Compute the average feature distance for each feature between categories using <distanceFunction> distance type
        Requires :
-        distanceMatrix given by "main.py distanceMatrix <distanceFunction>"
-        See requirements of "main.py distanceMatrix <distanceFunction>"
+        Normalized database located at <OUTPUT FOLDER>/NormaliseDB/ given by "main.py full-normalisation"
 
        Step of the assignment
        -----------------------
@@ -319,7 +325,7 @@ if len(sys.argv) == 3:
 
        Command
        -------
-        main.py exportStats
+        main.py exportFeaturesDist
 
        Parameters
        ----------
@@ -328,7 +334,7 @@ if len(sys.argv) == 3:
        Returns/Output
        --------------
         Export a CSV with the average feature distance for each feature from a category to another (for each unique unordered pair of category) """
-    if sys.argv[1] == "exportStats":
+    if sys.argv[1] == "exportFeaturesDist":
         for key in featureName.featureWeight:
             featureName.featureWeight[key] = 1
         resAvg, resStd = db.exportFeaturesDist(sys.argv[2])
@@ -419,6 +425,6 @@ if len(sys.argv) == 4:
        Save screenshot of the query mesh and the result in <OUTPUT FOLDER>/screenshot/
        Show the 4 most similar object in a pyplot windows (used for illustration purpose in the report) """
     if sys.argv[1] == "annQuery":
-        tree, rowLabel = db.buildTree() # leaf_size = 4
+        tree, rowLabel = db.buildTree()
         queryRes = db.annQuery(sys.argv[2], int(sys.argv[3]), tree, rowLabel)
         db.exportQueryRes(sys.argv[2], queryRes)

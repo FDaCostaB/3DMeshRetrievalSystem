@@ -4,6 +4,9 @@ Root:
     image_input: image_input
     widget_list: widget_list
     slider: slider
+    euclidean: euclidean
+    emd: emd
+    ann: ann
 
     BoxLayout:
         orientation: 'vertical'
@@ -13,6 +16,31 @@ Root:
             Button:
                 text: 'Load'
                 on_release: root.show_load()
+            BoxLayout:
+                CheckBox:
+                    id: euclidean
+                    group: "dist"
+                    active: True
+                    size_hint: None, None
+                    size: sp(32), sp(32)
+                Label:
+                    text: "Euclidean"
+                CheckBox:
+                    id: emd
+                    group: "dist"
+                    active: False
+                    size_hint: None, None
+                    size: sp(32), sp(32)
+                Label:
+                    text: "EMD"
+                CheckBox:
+                    id: ann
+                    group: "dist"
+                    active: False
+                    size_hint: None, None
+                    size: sp(32), sp(32)
+                Label:
+                    text: "ANN"
             BoxLayout:
                 Label:
                     text: "K:" + str(slider.value)
@@ -25,14 +53,14 @@ Root:
 
         BoxLayout:
             Image:
-                size_hint: 0.5, 1
+                size_hint: 0.2, 1
                 id: image_input
             GridLayout:
                 id: widget_list
-                size_hint: 0.5, 1
+                size_hint: 0.8, 1
                 cols: 3
-                padding: 20
-                spacing: 20
+                padding: 10
+                spacing: 10
 
 
             

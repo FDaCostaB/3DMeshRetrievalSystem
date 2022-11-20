@@ -426,12 +426,13 @@ def buildTree():
     return tree, rowLabel
 
 
+
 def annQuery(path, k, tree, rowLabel):
     mesh = Mesh(os.path.realpath(path))
     mesh.resample()
     mesh.saveMesh(os.path.join(settings[settingsName.outputPath.value], "normaliseQueriedMesh"))
     mesh = FeaturesExtract(os.path.join(settings[settingsName.outputPath.value],
-                                        "normaliseQueriedMesh." + settings[settingsName.meshExtension.value]))
+                                        "normaliseQueriedMesh" + settings[settingsName.meshExtension.value]))
     queryFeatures = mesh.featureFilter(10000)
     queryFeatures[featureName.FILENAME.value] = os.path.basename(path)
 
@@ -439,7 +440,9 @@ def annQuery(path, k, tree, rowLabel):
     return [(rowLabel[index], 0, []) for index in ii[0]]
 
 
-def query(path, qtype, k=5):
+def query(path, qtype, tree=None, rowLabel=None, k=5):
+    if qtype == "ann":
+        return annQuery(path, k, tree, rowLabel)
     mesh = Mesh(os.path.realpath(path))
     mesh.resample()
     mesh.saveMesh(os.path.join(settings[settingsName.outputPath.value],"normaliseQueriedMesh"))
@@ -603,9 +606,9 @@ def evaluateQuery():
     rDF.to_csv(os.path.join(os.path.realpath(settings[settingsName.outputPath.value]), "evaluation-eucl.csv"))
 
 
-def timeQuery():
+def timeQuery(distanceFunc):
     import time
-    #tree, rowLabel = buildTree()
+    tree, rowLabel = buildTree()
 
     df = pd.read_csv(os.path.join(os.path.realpath(settings[settingsName.outputPath.value]), "features.csv"))
     queryTime = []
@@ -613,8 +616,7 @@ def timeQuery():
         if row["File name"] not in ["avg", "std"]:
             queryPath = os.path.join(os.path.realpath(settings[settingsName.outputDBPath.value]),row["Folder name"],row["File name"])
             start = time.time()
-            query(queryPath, "emd", 20)
-            #annQuery(queryPath, 20, tree, rowLabel)
+            query(queryPath, distanceFunc, tree, rowLabel, 20)
             end = time.time()
             queryTime.append((end - start) * 10 ** 3)
             print(i)

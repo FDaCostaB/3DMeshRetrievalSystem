@@ -10,7 +10,7 @@ from kivy.uix.label import Label
 import DBData as db
 from functools import partial
 from concurrent import futures
-from Settings import readSettings, settings, settingsName
+from Settings import readSettings, setDistance
 import time
 
 import os
@@ -53,7 +53,7 @@ class Root(FloatLayout):
         newImg = Image(source = iPath, allow_stretch=True,height=200)
         newImg.reload()
         layout.add_widget(newImg)
-        layout.add_widget(Label(text=distance,height=10))
+        layout.add_widget(Label(text=distance,height=20))
         self.widget_list.add_widget(layout)
 
     def addWidgets(self,results):
@@ -70,15 +70,23 @@ class Root(FloatLayout):
     def load(self, path, filename):
         queryPath = os.path.join(path, filename[0])
         k = int(self.slider.value)
+        distFunc = ""
+        if self.euclidean.active:
+            distFunc = "euclidean"
+        if self.emd.active:
+            distFunc = "emd"
+        if self.ann.active:
+            distFunc = "ann"
         with futures.ProcessPoolExecutor(max_workers=5) as executor:
             cleanDir()
-            future = executor.submit(db.query, queryPath, "emd",k)
+            future = executor.submit(db.query, queryPath, distFunc , tree, rowLabel,k)
             queryRes = future.result()
             future = executor.submit(db.saveQueryRes,queryPath, queryRes)
             imageDist = future.result()
         time.sleep(2)
         self.dismiss_popup()
         self.addWidgets(imageDist)
+
 
     def save(self, path, filename):
         with open(os.path.join(path, filename), 'w') as stream:
@@ -101,5 +109,6 @@ def cleanDir():
             os.remove(dir)
 if __name__ == '__main__':
     readSettings()
+    tree, rowLabel = db.buildTree()
     cleanDir()
     Editor().run()
