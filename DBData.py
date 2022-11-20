@@ -534,8 +534,8 @@ def evaluateQuery():
     for i, row in df.iterrows():
         if row["File name"] not in ["avg", "std"]:
             queryPath = os.path.join(os.path.realpath(settings[settingsName.outputDBPath.value]),row["Folder name"],row["File name"])
-            queryResEucl = query(queryPath, "euclidean", 380)
-            queryResEMD = query(queryPath, "emd", 380)
+            queryResEucl = query(queryPath, "euclidean", k=380)
+            queryResEMD = query(queryPath, "emd", k=380)
 
             for dType in ["emd","euclidean"]:
                 if dType.lower() == "emd":
